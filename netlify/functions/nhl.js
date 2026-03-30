@@ -40,7 +40,10 @@ exports.handler = async (event) => {
   if (type === 'insights') {
     try {
       const { getStore } = require('@netlify/blobs');
-      const store = getStore('insights-cache');
+      const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+      const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.TOKEN;
+      const storeOpts = siteID ? { name: 'insights-cache', siteID, token } : 'insights-cache';
+      const store = getStore(storeOpts);
       const data = await store.getJSON('nyi-insights');
       if (!data) return { statusCode: 200, headers: CORS, body: JSON.stringify({ insights: [], generatedAt: null }) };
       return { statusCode: 200, headers: CORS, body: JSON.stringify(data) };
