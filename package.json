@@ -1,0 +1,8 @@
+{
+  "name": "nyi-castaways",
+  "version": "1.0.0",
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0",
+    "@netlify/functions": "^2.8.1"
+  }
+}
