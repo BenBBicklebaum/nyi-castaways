@@ -456,6 +456,11 @@ async function fetchStandings() {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     ST = {};
+    // Debug: log first row to see actual field names
+    if (d.standings && d.standings[0]) {
+      console.log('First standing row keys:', Object.keys(d.standings[0]));
+      console.log('First row sample:', JSON.stringify(d.standings[0]).slice(0, 300));
+    }
     (d.standings || []).forEach(row => {
       // teamAbbrev can be {default:"NYI"} or plain "NYI"
       const abbrev = (row.teamAbbrev && typeof row.teamAbbrev === 'object')
