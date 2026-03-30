@@ -451,8 +451,7 @@ async function fetchStandings() {
   setStatus('Fetching standings...');
   try {
     let r;
-    try { r = await fetch('/api/standings'); }
-    catch(e) { r = await fetch('/.netlify/functions/nhl?type=standings'); }
+    r = await fetch('/.netlify/functions/nhl?type=standings');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const raw = await r.text();
     console.log('Raw response length:', raw.length, 'first 300:', raw.slice(0,300));
@@ -999,8 +998,7 @@ function _renderScores(games) {
 async function _fetchScores() {
   try {
     let r;
-    try { r = await fetch('/api/scores'); }
-    catch(e1) { r = await fetch('/.netlify/functions/nhl?type=scores'); }
+    r = await fetch('/.netlify/functions/nhl?type=scores');
     if(!r.ok) throw new Error(r.status);
     const d=await r.json();
     _renderScores(d.games||[]);
