@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NYI Castaways Playoff Race Hub</title>
+<title>NYI Castaways Playoff Push 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -193,8 +193,8 @@ details[open] summary{border-radius:8px 8px 0 0}
     <img src="https://upload.wikimedia.org/wikipedia/en/thumb/5/53/New_York_Islanders_Logo.svg/200px-New_York_Islanders_Logo.svg.png"
          class="hdr-logo" alt="NYI" onerror="this.style.display='none'">
     <div class="hdr-text">
-      <h1>NYI Castaways <span>Playoff Race Hub</span></h1>
-      <div class="hdr-sub">Eastern Conference Playoff Race Hub · Powered by H007 Analytics</div>
+      <h1>NYI Castaways <span>Playoff Push 2026</span></h1>
+      <div class="hdr-sub">New York Islanders Playoff Push · Powered by H007 Analytics</div>
     </div>
   </div>
   <div class="hdr-date" id="standings-date">Loading standings...</div>
@@ -204,7 +204,7 @@ details[open] summary{border-radius:8px 8px 0 0}
 
 <div class="scores-bar">
   <div class="sc-lbl">
-    <span>🏒 Race Group Games</span>
+    <span>🏒 Playoff Race Games</span>
     <span id="sc-ts" style="font-size:.6rem;opacity:.55"></span>
   </div>
   <div class="sc-row" id="sc-row"><span class="sc-none">Loading scores...</span></div>
@@ -245,9 +245,9 @@ details[open] summary{border-radius:8px 8px 0 0}
       </div>
     </div>
 
-    <!-- RIGHT: Playoff Race -->
+    <!-- RIGHT: Playoff Push -->
     <div>
-      <div class="sec-lbl">Playoff Race</div>
+      <div class="sec-lbl">Playoff Push</div>
       <div class="tbl-wrap">
         <div class="tbl-top" onclick="toggleSection('race-body','race-chev')">
           <span class="tbl-title">Metro #2/#3 · WC1/2 · Bubble</span>
@@ -296,7 +296,7 @@ details[open] summary{border-radius:8px 8px 0 0}
     <div class="sec-lbl">Islanders Breakdown</div>
 
     <div class="ins-group-hd" onclick="toggleInsGroup('metro-ins','metro-chev')">
-      <span class="ins-group-lbl">🏒 Metropolitan Race</span>
+      <span class="ins-group-lbl">🏒 Metropolitan Push</span>
       <span class="ins-chev" id="metro-chev">▼</span>
     </div>
     <div id="metro-ins">
@@ -316,7 +316,7 @@ details[open] summary{border-radius:8px 8px 0 0}
     </div>
 
     <div class="ins-group-hd" onclick="toggleInsGroup('wc-ins','wc-chev')" style="margin-top:10px">
-      <span class="ins-group-lbl">🃏 Wild Card Race</span>
+      <span class="ins-group-lbl">🃏 Wild Card Push</span>
       <span class="ins-chev" id="wc-chev">▼</span>
     </div>
     <div id="wc-ins">
@@ -325,6 +325,13 @@ details[open] summary{border-radius:8px 8px 0 0}
       </div>
       <div id="wc-obs-body" class="ins-stack" style="display:none">
         <div id="wc-obs-cards" class="ins-loading">Loading...</div>
+      </div>
+      <div class="ins-tier-hd" onclick="toggleTier('wc-deep-body','wc-deep-chev')">
+        <span>🏒 AI Butchie Bot's AI-nalysis</span><span class="tier-chev" id="wc-deep-chev">▶</span>
+      </div>
+      <div id="wc-deep-body" class="ins-stack" style="display:none">
+        <div id="wc-butchie-cards" class="ins-loading">Loading AI Butchie Bot's take...</div>
+        <div id="wc-butchie-meta" style="font-size:.62rem;color:var(--muted);margin-top:4px;padding:0 2px"></div>
       </div>
 
     </div>
@@ -374,7 +381,7 @@ details[open] summary{border-radius:8px 8px 0 0}
   </div>
 </div>
 
-<div class="footer">NYI Castaways Playoff Race Hub · Powered by H007 Analytics</div>
+<div class="footer">NYI Castaways Playoff Push · Powered by H007 Analytics</div>
 
 <div id="sc-overlay"></div>
 <div id="sc-tooltip"></div>
@@ -872,7 +879,7 @@ function renderRace() {
     </tr>`);
   }
 
-  banner('Metropolitan Division Race','ban-met');
+  banner('Metropolitan Division Push','ban-met');
   [met[1],met[2]].filter(Boolean).forEach(raceRow);
   banner('Wild Card','ban-wc');
   wcp.slice(0,2).forEach(raceRow);
@@ -1055,21 +1062,39 @@ async function renderDeepInsights(){
       return;
     }
 
-    cardsEl.innerHTML = insights.map(ins =>
-      `<div class="ins-card butchie-card">
-        <div class="butchie-hd">
-          <span class="butchie-avatar">🏒</span>
-          <span class="butchie-name">AI Butchie Bot's AI-nalysis</span>
-        </div>
-        <p class="ins-txt">${ins}</p>
-      </div>`
-    ).join('');
+    // Build reusable card renderer
+    function butchieCards(arr) {
+      return (arr||[]).map(ins =>
+        `<div class="ins-card butchie-card">
+          <div class="butchie-hd">
+            <span class="butchie-avatar">🏒</span>
+            <span class="butchie-name">AI Butchie Bot's AI-nalysis</span>
+          </div>
+          <p class="ins-txt">${ins}</p>
+        </div>`
+      ).join('') || '<div class="ins-loading">No insights available.</div>';
+    }
 
-    if (metaEl && genAt) {
+    // Metro: use d.metro if available, fallback to combined insights
+    const metroArr = (d.metro && d.metro.length) ? d.metro : insights;
+    cardsEl.innerHTML = butchieCards(metroArr);
+
+    // Wild Card: use d.wildcard if available, fallback to combined insights
+    const wcCards = document.getElementById('wc-butchie-cards');
+    if (wcCards) {
+      const wcArr = (d.wildcard && d.wildcard.length) ? d.wildcard : insights;
+      wcCards.innerHTML = butchieCards(wcArr);
+    }
+
+    // Timestamp + disclaimer on both
+    if (genAt) {
       const dt = new Date(genAt);
       const timeStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+
         dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-      metaEl.innerHTML = `Last updated: ${timeStr} &nbsp;·&nbsp; <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em>`;
+      const metaHtml = `Last updated: ${timeStr} &nbsp;·&nbsp; <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em>`;
+      if (metaEl) metaEl.innerHTML = metaHtml;
+      const wcMeta = document.getElementById('wc-butchie-meta');
+      if (wcMeta) wcMeta.innerHTML = metaHtml;
     }
   } catch(e) {
     cardsEl.innerHTML = '<div class="ins-loading">AI Butchie Bot is temporarily unavailable. Try again soon.</div>';
