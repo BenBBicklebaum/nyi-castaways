@@ -122,12 +122,12 @@ exports.handler = async (event, context) => {
     let previousSnapshot = {};
     let insightsAge = Infinity;
     try {
-      const prev = await store.getJSON('game-snapshot');
+      const prev = await store.get('game-snapshot', { type: 'json' });
       if (prev) previousSnapshot = prev;
     } catch(e) { /* no previous snapshot */ }
 
     try {
-      const existing = await store.getJSON('nyi-insights');
+      const existing = await store.get('nyi-insights', { type: 'json' });
       if (existing?.generatedAt) {
         insightsAge = (Date.now() - new Date(existing.generatedAt).getTime()) / 60000;
       }
@@ -281,7 +281,7 @@ Respond ONLY with valid JSON in this exact format. No preamble, no markdown:
       'https://api.openai.com/v1/chat/completions',
       {
         model: 'gpt-4o-mini',
-        max_tokens: 800,
+        max_tokens: 2500,
         temperature: 0.7,
         messages: [{ role: 'user', content: prompt }]
       },
@@ -322,7 +322,7 @@ Respond ONLY with valid JSON in this exact format. No preamble, no markdown:
       nyiGp: nyi.gp
     };
 
-    await store.setJSON('nyi-insights', payload);
+    await store.set('nyi-insights', JSON.stringify(payload));
 
     console.log('generate-insights: stored', metroInsights.length, 'metro +', wildcardInsights.length, 'wildcard insights');
     return {
