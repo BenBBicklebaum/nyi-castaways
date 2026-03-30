@@ -307,10 +307,10 @@ details[open] summary{border-radius:8px 8px 0 0}
         <div id="metro-obs-cards" class="ins-loading">Loading...</div>
       </div>
       <div class="ins-tier-hd" onclick="toggleTier('metro-deep-body','metro-deep-chev')">
-        <span>🏒 Butchie's AI-nalysis</span><span class="tier-chev" id="metro-deep-chev">▶</span>
+        <span>🏒 AI Butchie Bot's AI-nalysis</span><span class="tier-chev" id="metro-deep-chev">▶</span>
       </div>
       <div id="metro-deep-body" class="ins-stack" style="display:none">
-        <div id="butchie-cards" class="ins-loading">Loading Butchie's take...</div>
+        <div id="butchie-cards" class="ins-loading">Loading AI Butchie Bot's take...</div>
         <div id="butchie-meta" style="font-size:.62rem;color:var(--muted);margin-top:4px;padding:0 2px"></div>
       </div>
     </div>
@@ -366,7 +366,7 @@ details[open] summary{border-radius:8px 8px 0 0}
         <p style="margin-top:8px"><strong>Rooting Interest</strong> — A composite threat score determines who NYI fans should root against. Factors: pts gap to NYI (highest weight), projected final pts, adjusted SOS rank, games remaining, H2H games vs NYI still to play, current WC position proximity. For head-to-head rival games (both teams in the race), tapping a score card shows the full breakdown including tiebreaker context.</p>
 
         <p style="margin-top:8px"><strong>Observations</strong> — Rule-based, recalculated from live standings on every page load. Covers position, schedule difficulty, H2H leverage, and pace.</p>
-        <p style="margin-top:8px"><strong>Butchie's AI-nalysis</strong> — Powered by GPT-4o-mini. After each race group game completes, a scheduled process fetches live standings, computes all analytics context (pts, RW, ROW, adjusted SOS, projections, tiebreakers, L10 trends, streaks, H2H remaining), and sends it to the AI to generate 3-4 sharp analyst-style insights. The goal: surface non-obvious findings that require synthesizing multiple data points simultaneously — the kind of thing a beat writer would say if they had a supercomputer. Insights refresh automatically after each game. <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em></p>
+        <p style="margin-top:8px"><strong>AI Butchie Bot's AI-nalysis</strong> — Powered by GPT-4o-mini. After each race group game completes, a scheduled process fetches live standings, computes all analytics context (pts, RW, ROW, adjusted SOS, projections, tiebreakers, L10 trends, streaks, H2H remaining), and sends it to the AI to generate 3-4 sharp analyst-style insights. The goal: surface non-obvious findings that require synthesizing multiple data points simultaneously — the kind of thing a beat writer would say if they had a supercomputer. Insights refresh automatically after each game. <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em></p>
 
       </div>
     </details>
@@ -1042,7 +1042,7 @@ async function renderDeepInsights(){
   const cardsEl = document.getElementById('butchie-cards');
   const metaEl  = document.getElementById('butchie-meta');
   if (!cardsEl) return;
-  cardsEl.innerHTML = '<div class="ins-loading">Butchie is thinking...</div>';
+  cardsEl.innerHTML = '<div class="ins-loading">AI Butchie Bot is thinking...</div>';
 
   try {
     const r = await fetch('/.netlify/functions/nhl?type=insights');
@@ -1051,7 +1051,7 @@ async function renderDeepInsights(){
     const genAt = d.generatedAt;
 
     if (!insights.length) {
-      cardsEl.innerHTML = '<div class="ins-loading">Butchie hasn\'t weighed in yet — check back after the next game.</div>';
+      cardsEl.innerHTML = '<div class="ins-loading">AI Butchie Bot hasn\'t weighed in yet — check back after the next game.</div>';
       return;
     }
 
@@ -1059,7 +1059,7 @@ async function renderDeepInsights(){
       `<div class="ins-card butchie-card">
         <div class="butchie-hd">
           <span class="butchie-avatar">🏒</span>
-          <span class="butchie-name">Butchie's AI-nalysis</span>
+          <span class="butchie-name">AI Butchie Bot's AI-nalysis</span>
         </div>
         <p class="ins-txt">${ins}</p>
       </div>`
@@ -1072,7 +1072,7 @@ async function renderDeepInsights(){
       metaEl.innerHTML = `Last updated: ${timeStr} &nbsp;·&nbsp; <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em>`;
     }
   } catch(e) {
-    cardsEl.innerHTML = '<div class="ins-loading">Butchie is temporarily unavailable. Try again soon.</div>';
+    cardsEl.innerHTML = '<div class="ins-loading">AI Butchie Bot is temporarily unavailable. Try again soon.</div>';
   }
 }
 
