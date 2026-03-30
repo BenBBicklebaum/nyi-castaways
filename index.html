@@ -343,37 +343,44 @@ details[open] summary{border-radius:8px 8px 0 0}
       <summary>Methodology</summary>
       <div class="meth-body">
 
-        <p><strong>Projected Points</strong> — Not a simple pace calculation. Three factors are blended:</p>
+        <p><strong>Playoff Race Games</strong> — The scores bar tracks games involving any team in the push group (BOS, CBJ, DET, NYI, OTT, PHI, PIT). NYI's game is always shown full-width at the top. Use ‹ › to navigate up to 14 days back or 3 days forward.</p>
+
+        <p style="margin-top:8px"><strong>Projected Points</strong> — Three factors are blended:</p>
         <ul style="margin:4px 0 8px 16px;line-height:1.8;font-size:.75rem">
           <li><strong>Base pace</strong> — current pts ÷ GP, projected over remaining games</li>
-          <li><strong>Adjusted SOS regression</strong> — if a team's remaining schedule is harder than what they've faced so far, their pace is expected to regress downward (30% weight). Easier remaining schedule, pace holds. Uses adjusted SOS, not raw.</li>
-          <li><strong>H2H penalty</strong> — head-to-head games against direct rivals are tighter by nature. A small drag (~0.012 pts/game per H2H remaining) is applied.</li>
+          <li><strong>Adjusted SOS regression</strong> — if remaining schedule is harder than what a team has faced, pace regresses downward (30% weight). Uses adjusted SOS, not raw.</li>
+          <li><strong>H2H penalty</strong> — inter-rival games are tighter by nature. A small drag (~0.012 pts/game per H2H remaining) is applied.</li>
         </ul>
 
-        <p><strong>Schedule of Record (SOS# and ADJ#)</strong> — Both columns rank all 32 teams by remaining schedule difficulty (1 = hardest, 32 = easiest), based on opponents' current points percentage.</p>
+        <p><strong>SOS# and ADJ#</strong> — Both rank all 32 teams by remaining schedule difficulty (1 = hardest, 32 = easiest).</p>
         <ul style="margin:4px 0 8px 16px;line-height:1.8;font-size:.75rem">
           <li><strong>SOS#</strong> — Raw rank: straight average of remaining opponents' pts%</li>
-          <li><strong>ADJ#</strong> — Adjusted rank: applies a haircut (floor of 0.500 = coin flip) to any opponent who is mathematically locked into their conference seed AND appears in your schedule during their final 2 games. A locked team may rest starters, inflating the apparent difficulty. ★ flags when a haircut was applied.</li>
+          <li><strong>ADJ#</strong> — Adjusted rank: applies a haircut (floor of 0.500 = coin flip) for opponents who are mathematically locked into their seed AND appear in your schedule during their final 2 games. A locked team may rest starters. ★ flags when a haircut was applied.</li>
         </ul>
 
         <p><strong>Tiebreakers</strong> — When teams finish tied on points, the NHL applies these in order:</p>
         <ol style="margin:4px 0 8px 16px;line-height:1.8;font-size:.75rem">
           <li><strong>Points %</strong> — if teams played unequal games, higher pts% wins</li>
-          <li><strong>RW</strong> — Regulation Wins (no OT, no shootout) — the key tiebreaker, shown in <span style="color:#a78bfa;font-weight:700">purple</span></li>
+          <li><strong>RW</strong> — Regulation Wins (no OT, no shootout) — shown in <span style="color:#a78bfa;font-weight:700">purple</span></li>
           <li><strong>ROW</strong> — Regulation + OT Wins (excludes shootout wins) — shown in <span style="color:#86efac;font-weight:700">green</span></li>
           <li><strong>W</strong> — Total wins (all methods)</li>
           <li><strong>H2H</strong> — Points earned in games between only the tied teams</li>
           <li><strong>DIFF</strong> — Season-long goal differential</li>
           <li><strong>GF</strong> — Season-long goals for</li>
         </ol>
-        <p style="font-size:.75rem">▲TB / ▼TB in the race table indicates who currently holds the tiebreaker edge when two teams are within 1pt. The clinch tracker flags tiebreaker scenarios when projections land tied teams at the same cutline.</p>
+        <p style="font-size:.75rem">▲TB / ▼TB in the race table flags who holds the tiebreaker when teams are within 1pt.</p>
 
-        <p style="margin-top:8px"><strong>Clinch Thresholds</strong> — Each clinch card shows the projected pts of the first team currently outside that cutline + 1. Tapping reveals the threshold team's current pace, and how many pts/game NYI needs to exceed it. When NYI and the threshold team project to the same total, the tiebreaker resolution is shown.</p>
+        <p style="margin-top:8px"><strong>Magic Numbers</strong> — Points needed by NYI in their remaining games to exceed the projected pace of the first team outside each cutline.</p>
 
-        <p style="margin-top:8px"><strong>Rooting Interest</strong> — A composite threat score determines who NYI fans should root against. Factors: pts gap to NYI (highest weight), projected final pts, adjusted SOS rank, games remaining, H2H games vs NYI still to play, current WC position proximity. For head-to-head rival games (both teams in the race), tapping a score card shows the full breakdown including tiebreaker context.</p>
+        <p style="margin-top:8px"><strong>Clinch Thresholds</strong> — Each card shows the projected pts of the first team outside that cutline + 1. Tap for the full breakdown including pts/game required and tiebreaker resolution when projections are tied.</p>
 
-        <p style="margin-top:8px"><strong>Observations</strong> — Rule-based, recalculated from live standings on every page load. Covers position, schedule difficulty, H2H leverage, and pace.</p>
-        <p style="margin-top:8px"><strong>AI Butchie Bot's AI-nalysis</strong> — Powered by GPT-4o-mini. After each race group game completes, a scheduled process fetches live standings, computes all analytics context (pts, RW, ROW, adjusted SOS, projections, tiebreakers, L10 trends, streaks, H2H remaining), and sends it to the AI to generate 3-4 sharp analyst-style insights. The goal: surface non-obvious findings that require synthesizing multiple data points simultaneously — the kind of thing a beat writer would say if they had a supercomputer. Insights refresh automatically after each game. <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em></p>
+        <p style="margin-top:8px"><strong>Observations</strong> — Rule-based, recalculated from live standings on every page load. Covers position, schedule difficulty, H2H leverage, streak and L10 trends.</p>
+
+        <p style="margin-top:8px"><strong>AI Butchie Bot's AI-nalysis</strong> — Powered by GPT-4o-mini. After each push group game completes, a scheduled process fetches live standings, computes all analytics context (pts, RW, ROW, adjusted SOS, projections, tiebreakers, L10, streaks, H2H remaining), and sends it to the AI. Metropolitan Push insights focus on Metro #2/#3 seeding vs PIT and the bracket implications. Wild Card Push insights focus on WC1/WC2 threats from the bubble. Insights refresh automatically within an hour of any push group game ending.</p>
+
+        <p style="margin-top:8px"><strong>Rooting Interest</strong> — A composite threat score determines who NYI fans should root against. Factors: pts gap to NYI, projected final pts, adjusted SOS rank, games remaining, H2H games vs NYI remaining, current WC position. Tap any score card involving two push group teams for the full breakdown.</p>
+
+        <p style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);color:var(--org);font-style:italic;font-size:.74rem">These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</p>
 
       </div>
     </details>
@@ -672,6 +679,16 @@ function threatScore(team) {
 
 function rootingInterest(away, home) {
   if(away==='NYI'||home==='NYI') return null;
+
+  // BOS vs MTL: conditional — depends on NYI's Metro standing
+  if((away==='BOS'&&home==='MTL')||(away==='MTL'&&home==='BOS')){
+    const ctx=mtlRootingContext();
+    if(!ctx) return null;
+    if(ctx.rootFor==='MTL') return 'MTL'; // root for MTL = root against BOS
+    if(ctx.rootAgainst==='MTL') return 'BOS';
+    return null;
+  }
+
   const ar=RACE_GROUP.has(away), hr=RACE_GROUP.has(home);
   if(!ar&&!hr) return null;
   if(ar&&!hr) return home;
@@ -714,6 +731,14 @@ function threatReason(team) {
   if(rank>=20) risks.push(`easy adj sched (#${rank})`);
   if(proj<nyi.pts) risks.push(`pace falls short at ${proj}pts`);
 
+  // MTL special context
+  if(team==='MTL'){
+    const ctx=mtlRootingContext();
+    if(ctx){
+      if(ctx.rootFor==='MTL') return 'Root FOR MTL — '+ctx.reason+(ctx.nuance?' '+ctx.nuance:'');
+      if(ctx.rootAgainst==='MTL') return 'Root AGAINST MTL — '+ctx.reason+(ctx.nuance?' '+ctx.nuance:'');
+    }
+  }
   return parts.join(', ')+(risks.length?' · risk: '+risks.join(', '):'');
 }
 
