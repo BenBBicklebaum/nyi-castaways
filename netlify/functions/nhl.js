@@ -41,7 +41,7 @@ exports.handler = async (event) => {
     try {
       const { getStore } = require('@netlify/blobs');
       const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-      const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.TOKEN;
+      const token = process.env.NETLIFY_AUTH_TOKEN || process.env.NETLIFY_BLOBS_TOKEN || process.env.TOKEN;
       const storeOpts = siteID ? { name: 'insights-cache', siteID, token } : 'insights-cache';
       const store = getStore(storeOpts);
       const data = await store.getJSON('nyi-insights');
