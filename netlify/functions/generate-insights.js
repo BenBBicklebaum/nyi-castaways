@@ -53,9 +53,13 @@ function postJson(url, payload, headers = {}) {
 const RACE_GROUP = new Set(['BOS','CBJ','DET','NYI','OTT','PHI','PIT']);
 
 // ── Main handler ──────────────────────────────────────────────────
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
   console.log('generate-insights: starting', new Date().toISOString());
-  const store = getStore('insights-cache');
+  // Netlify Blobs needs siteID — get from context or environment
+  const siteID = (context && context.site && context.site.id) || process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.TOKEN;
+  const storeOpts = siteID ? { name: 'insights-cache', siteID, token } : 'insights-cache';
+  const store = getStore(storeOpts);
 
   try {
     // 1. Fetch today's scores

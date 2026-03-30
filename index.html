@@ -825,8 +825,13 @@ async function fetchStandings() {
       ST[abbrev] = {
         wins: row.wins||0, losses: row.losses||0, otl: row.otLosses||0,
         pts: row.points||0, gp: row.gamesPlayed||0,
-        rw: row.regulationWins||0,
-        row: row.regulationPlusOtWins||0,
+        rw:     row.regulationWins||0,
+        row:    row.regulationPlusOtWins||0,
+        diff:   row.goalDifferential||0,
+        l10w:   row.l10Wins||0,
+        l10l:   row.l10Losses||0,
+        l10otl: row.l10OtLosses||0,
+        streak: row.streakCode||'',
         conf, div
       };
     });
