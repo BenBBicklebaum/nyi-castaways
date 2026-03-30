@@ -54,6 +54,10 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .sc-root-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:700;letter-spacing:.03em;opacity:.85}
 .sc-tap-ind{font-size:.6rem;opacity:.6}
 .sc-none{color:#64748b;font-size:.78rem;font-style:italic}
+.sc-nav{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.sc-nav-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:4px;color:#94a3b8;font-size:.9rem;font-weight:700;width:24px;height:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}
+.sc-nav-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.sc-nav-date{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:800;color:#e2e8f0;letter-spacing:.05em;min-width:80px;text-align:center}
 #sc-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200}
 #sc-overlay.show{display:block}
 #sc-tooltip{display:none;position:fixed;z-index:201;background:#1e293b;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:10px 14px;font-size:.78rem;color:#e2e8f0;font-family:'Barlow',sans-serif;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:260px;pointer-events:none}
@@ -206,6 +210,11 @@ details[open] summary{border-radius:8px 8px 0 0}
   <div class="sc-lbl">
     <span>🏒 Playoff Race Games</span>
     <span id="sc-ts" style="font-size:.6rem;opacity:.55"></span>
+  </div>
+  <div class="sc-nav">
+    <button class="sc-nav-btn" onclick="scNavDay(-1)">‹</button>
+    <span class="sc-nav-date" id="sc-nav-date">Today</span>
+    <button class="sc-nav-btn" onclick="scNavDay(1)">›</button>
   </div>
   <div class="sc-row" id="sc-row"><span class="sc-none">Loading scores...</span></div>
 </div>
@@ -1238,6 +1247,27 @@ function renderField(){
 // SCORES
 // ═══════════════════════════════════════════════════════════════
 let _scoreTimer=null;
+let _scoreOffset=0;
+
+function _offsetToDate(offset){
+  const d=new Date(); d.setDate(d.getDate()+offset);
+  return d.toISOString().slice(0,10);
+}
+function _dateLabel(offset){
+  if(offset===0) return 'Today';
+  if(offset===-1) return 'Yesterday';
+  if(offset===1) return 'Tomorrow';
+  const d=new Date(); d.setDate(d.getDate()+offset);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function scNavDay(dir){
+  _scoreOffset=Math.max(-14,Math.min(3,_scoreOffset+dir));
+  const lbl=document.getElementById('sc-nav-date');
+  if(lbl) lbl.textContent=_dateLabel(_scoreOffset);
+  if(_scoreTimer){clearInterval(_scoreTimer);_scoreTimer=null;}
+  _fetchScores();
+  if(_scoreOffset===0) _scoreTimer=setInterval(_fetchScores,60000);
+}
 
 function _gameLabel(g){
   const s=g.gameState;
@@ -1347,7 +1377,10 @@ function _renderScores(games){
 
 async function _fetchScores(){
   try{
-    const r=await fetch('/.netlify/functions/nhl?type=scores');
+    const url=_scoreOffset===0
+      ?'/.netlify/functions/nhl?type=scores'
+      :'/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_scoreOffset);
+    const r=await fetch(url);
     if(!r.ok) throw new Error(r.status);
     const d=await r.json();
     _renderScores(d.games||[]);
@@ -1475,6 +1508,9 @@ async function loadAll(){
   _scoreOffset = 0;
   const _navLbl=document.getElementById('sc-nav-date');
   if(_navLbl) _navLbl.textContent='Today';
+  _scoreOffset=0;
+  const _navEl=document.getElementById('sc-nav-date');
+  if(_navEl) _navEl.textContent='Today';
   _fetchScores();
   if(_scoreTimer) clearInterval(_scoreTimer);
   _scoreTimer=setInterval(_fetchScores,60000);
