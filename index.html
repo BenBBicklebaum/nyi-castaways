@@ -25,7 +25,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .hdr-date{font-size:.78rem;font-weight:700;color:#fff;margin-top:4px}
 #status-bar{font-size:.62rem;color:rgba(255,255,255,.45);margin-top:4px;min-height:14px}
 
-/* SCORES */ 
+/* SCORES */
 .scores-bar{background:#0a0f1e;padding:6px 16px 7px;border-bottom:2px solid var(--org)}
 .sc-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.12em;color:var(--org);text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
 .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}
@@ -808,11 +808,6 @@ function renderEast() {
       <td class="num rw-col">${s.rw}</td>
       <td class="num row-col">${s.row}</td>
       <td class="num muted">${gl}</td>
-      <td class="num muted">#${rawRank}</td>
-      <td class="num muted">#${rank}${adjFlag}</td>
-      <td class="num diff-col" style="color:${s.diff>0?'#4ade80':s.diff<0?'#f87171':'var(--muted)'}">${s.diff>0?'+':''}${s.diff}</td>
-      <td class="num hide-mobile" style="font-size:.7rem">${s.l10w}-${s.l10l}-${s.l10otl}</td>
-      <td class="num stk-col" style="color:${s.streak&&s.streak[0]==='W'?'#4ade80':s.streak&&s.streak[0]==='L'?'#f87171':'#94a3b8'}">${s.streak||'—'}</td>
       <td class="num proj-col">${proj}</td>
     </tr>`);
   }
