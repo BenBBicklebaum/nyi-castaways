@@ -1,44 +1,28 @@
-// Netlify serverless function — proxies NHL API + Anthropic API
-// No CORS issues since this runs server-side
-
 const https = require('https');
 
 function fetchUrl(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, body: data }));
-    }).on('error', reject);
-  });
-}
-
-async function callAnthropic(prompt) {
-  const body = JSON.stringify({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 2000,
-    messages: [{ role: 'user', content: prompt }]
-  });
-
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: 'api.anthropic.com',
-      path: '/v1/messages',
-      method: 'POST',
+    const req = https.get(url, {
       headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01'
+        'User-Agent': 'Mozilla/5.0 (compatible; NYIBot/1.0)',
+        'Accept': 'application/json'
       }
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, body: data }));
+      res.on('end', () => {
+        console.log(`Fetched ${url} -> status ${res.statusCode}, bytes ${data.length}`);
+        resolve({ status: res.statusCode, body: data });
+      });
     });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
+    req.on('error', (e) => {
+      console.error(`Fetch error for ${url}:`, e.message);
+      reject(e);
+    });
+    req.setTimeout(10000, () => {
+      req.destroy();
+      reject(new Error('Request timeout'));
+    });
   });
 }
 
@@ -49,37 +33,42 @@ const CORS = {
   'Content-Type': 'application/json'
 };
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
+  console.log('Event:', JSON.stringify({
+    path: event.path,
+    method: event.httpMethod,
+    params: event.queryStringParameters
+  }));
+
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: CORS, body: '' };
   }
 
-  const path = event.path.replace('/.netlify/functions/nhl', '');
+  const params = event.queryStringParameters || {};
+  const type = params.type || event.path.split('/').pop() || 'unknown';
+  console.log('Resolved type:', type);
 
   try {
-    // ── Standings ──────────────────────────────────────────────────
-    if (path === '/standings' || path === '' && event.queryStringParameters?.type === 'standings') {
-      const result = await fetchUrl('https://api-web.nhle.com/v1/standings/now');
-      return { statusCode: result.status, headers: CORS, body: result.body };
+    if (type === 'standings') {
+      const r = await fetchUrl('https://api-web.nhle.com/v1/standings/now');
+      return { statusCode: 200, headers: CORS, body: r.body };
     }
-
-    // ── Scores ─────────────────────────────────────────────────────
-    if (path === '/scores') {
-      const result = await fetchUrl('https://api-web.nhle.com/v1/score/now');
-      return { statusCode: result.status, headers: CORS, body: result.body };
+    if (type === 'scores') {
+      const r = await fetchUrl('https://api-web.nhle.com/v1/score/now');
+      return { statusCode: 200, headers: CORS, body: r.body };
     }
-
-    // ── AI Insights ─────────────────────────────────────────────────
-    if (path === '/insights' && event.httpMethod === 'POST') {
-      const { prompt } = JSON.parse(event.body || '{}');
-      if (!prompt) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'No prompt' }) };
-      const result = await callAnthropic(prompt);
-      return { statusCode: result.status, headers: CORS, body: result.body };
-    }
-
-    return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: 'Unknown endpoint' }) };
-
+    // Default test response
+    return {
+      statusCode: 200,
+      headers: CORS,
+      body: JSON.stringify({ ok: true, type, message: 'Function is running' })
+    };
   } catch (e) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    console.error('Handler error:', e.message);
+    return {
+      statusCode: 500,
+      headers: CORS,
+      body: JSON.stringify({ error: e.message, type })
+    };
   }
 };
