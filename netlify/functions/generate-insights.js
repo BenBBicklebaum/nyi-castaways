@@ -70,7 +70,27 @@ exports.handler = async (event, context) => {
     return { statusCode: 500, body: JSON.stringify({ error: 'NETLIFY_SITE_ID env var not set' }) };
   }
 
-  const store = getStore({ name: 'insights-cache', siteID, token });
+  // Log all relevant env vars for debugging
+  console.log('ENV CHECK:', {
+    hasNETLIFY_BLOBS_CONTEXT: !!process.env.NETLIFY_BLOBS_CONTEXT,
+    hasNETLIFY_AUTH_TOKEN: !!process.env.NETLIFY_AUTH_TOKEN,
+    hasNETLIFY_SITE_ID: !!process.env.NETLIFY_SITE_ID,
+    hasOPENAI: !!process.env.OPENAI_API_KEY
+  });
+
+  // If we have the Blobs context (normal scheduled/deployed runs), use default
+  // If not (manual run from UI), try with explicit creds
+  let store;
+  if (process.env.NETLIFY_BLOBS_CONTEXT) {
+    store = getStore('insights-cache');
+  } else if (siteID && token) {
+    store = getStore({ name: 'insights-cache', siteID, token });
+  } else {
+    return { statusCode: 500, body: JSON.stringify({ 
+      error: 'Cannot initialize Blobs store — missing NETLIFY_BLOBS_CONTEXT or token',
+      siteID: !!siteID, token: !!token
+    })};
+  }
 
   try {
     // 1. Fetch today's scores
