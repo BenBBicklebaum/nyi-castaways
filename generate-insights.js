@@ -122,12 +122,12 @@ exports.handler = async (event, context) => {
     let previousSnapshot = {};
     let insightsAge = Infinity;
     try {
-      const prev = await store.get('game-snapshot', { type: 'json' });
+      const prev = await store.getJSON('game-snapshot');
       if (prev) previousSnapshot = prev;
     } catch(e) { /* no previous snapshot */ }
 
     try {
-      const existing = await store.get('nyi-insights', { type: 'json' });
+      const existing = await store.getJSON('nyi-insights');
       if (existing?.generatedAt) {
         insightsAge = (Date.now() - new Date(existing.generatedAt).getTime()) / 60000;
       }
@@ -322,7 +322,7 @@ Respond ONLY with valid JSON in this exact format. No preamble, no markdown:
       nyiGp: nyi.gp
     };
 
-    await store.set('nyi-insights', JSON.stringify(payload));
+    await store.setJSON('nyi-insights', payload);
 
     console.log('generate-insights: stored', metroInsights.length, 'metro +', wildcardInsights.length, 'wildcard insights');
     return {

@@ -81,11 +81,12 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 
 /* TABLES */
 .tbl-wrap{background:var(--srf);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-bottom:16px}
-.tbl-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;flex-wrap:wrap;gap:6px}
+.tbl-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr);cursor:pointer;flex-wrap:wrap;gap:6px;user-select:none;transition:background .15s}.tbl-top:hover{background:rgba(255,255,255,.04)}.tbl-top:hover .sec-toggle-btn{color:#60a5fa}
+.tbl-top:hover{background:rgba(255,255,255,.04)}
 .tbl-top:hover .sec-toggle-btn{color:var(--nyi)}
 .tbl-title{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--txt)}
 .tbl-ts{font-size:.65rem;color:var(--muted)}
-.sec-toggle-btn{font-size:.68rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+.sec-toggle-btn{font-size:.68rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:#6b8fc2;letter-spacing:.04em;white-space:nowrap;padding:2px 8px;border:1px solid rgba(255,255,255,.1);border-radius:4px}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;min-width:560px}
 th{background:#071020;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 7px;text-align:left;white-space:nowrap}
@@ -146,7 +147,7 @@ th.row-col{color:#86efac}
 .ins-group-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff}
 .ins-chev{color:rgba(255,255,255,.7);font-size:.7rem}
 .ins-tier-hd{display:flex;justify-content:space-between;align-items:center;padding:5px 12px;background:rgba(255,255,255,.06);border-radius:6px;cursor:pointer;margin-bottom:5px;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.tier-chev{font-size:.65rem}
+.tier-chev{font-size:.75rem;opacity:.8}
 .ins-stack{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
 .ins-card{background:var(--srf);border:1px solid var(--bdr);border-radius:8px;padding:11px 13px;border-left:4px solid var(--nyi)}
 .ins-deep{border-left-color:#7c3aed!important;background:linear-gradient(to right,#1a1033,var(--srf) 40%)!important}
@@ -166,8 +167,8 @@ th.row-col{color:#86efac}
 .fc-body{font-size:.78rem;line-height:1.5;color:var(--txt)}
 
 /* METHODOLOGY */
-details summary{padding:10px 14px;font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);cursor:pointer;background:linear-gradient(135deg,#0d1e3d,#102550);border-radius:8px;border:1px solid rgba(255,255,255,.1)}
-details[open] summary{border-radius:8px 8px 0 0}
+details summary{padding:10px 14px;font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;cursor:pointer;background:linear-gradient(135deg,#0d1e3d,#102550);border-radius:8px;border:1px solid rgba(255,255,255,.15);transition:background .15s;user-select:none;list-style:none}
+details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background:linear-gradient(135deg,#102550,#143070);color:#fff}details summary::after{content:" ▼";font-size:.6rem;opacity:.7}details[open] summary::after{content:" ▲";font-size:.6rem;opacity:.7}
 .meth-body{background:var(--srf);padding:12px 14px;border-radius:0 0 8px 8px;font-size:.76rem;line-height:1.6;color:#8aabcf}
 
 /* FOOTER */
@@ -320,9 +321,9 @@ details[open] summary{border-radius:8px 8px 0 0}
         <div id="metro-obs-cards" class="ins-loading">Loading...</div>
       </div>
       <div class="ins-tier-hd" onclick="toggleTier('metro-deep-body','metro-deep-chev')">
-        <span>🏒 AI Butchie Bot's AI-nalysis</span><span class="tier-chev" id="metro-deep-chev">▶</span>
+        <span>🏒 AI Butchie Bot's AI-nalysis</span><span class="tier-chev" id="metro-deep-chev">▼</span>
       </div>
-      <div id="metro-deep-body" class="ins-stack" style="display:none">
+      <div id="metro-deep-body" class="ins-stack">
         <div id="butchie-cards" class="ins-loading">Loading AI Butchie Bot's take...</div>
         <div id="butchie-meta" style="font-size:.62rem;color:var(--muted);margin-top:4px;padding:0 2px"></div>
       </div>
@@ -334,15 +335,15 @@ details[open] summary{border-radius:8px 8px 0 0}
     </div>
     <div id="wc-ins">
       <div class="ins-tier-hd" onclick="toggleTier('wc-obs-body','wc-obs-chev')">
-        <span>Observations</span><span class="tier-chev" id="wc-obs-chev">▶</span>
+        <span>Observations</span><span class="tier-chev" id="wc-obs-chev">▼</span>
       </div>
-      <div id="wc-obs-body" class="ins-stack" style="display:none">
+      <div id="wc-obs-body" class="ins-stack">
         <div id="wc-obs-cards" class="ins-loading">Loading...</div>
       </div>
       <div class="ins-tier-hd" onclick="toggleTier('wc-deep-body','wc-deep-chev')">
-        <span>🏒 AI Butchie Bot's AI-nalysis</span><span class="tier-chev" id="wc-deep-chev">▶</span>
+        <span>🏒 AI Butchie Bot's AI-nalysis</span><span class="tier-chev" id="wc-deep-chev">▼</span>
       </div>
-      <div id="wc-deep-body" class="ins-stack" style="display:none">
+      <div id="wc-deep-body" class="ins-stack">
         <div id="wc-butchie-cards" class="ins-loading">Loading AI Butchie Bot's take...</div>
         <div id="wc-butchie-meta" style="font-size:.62rem;color:var(--muted);margin-top:4px;padding:0 2px"></div>
       </div>
