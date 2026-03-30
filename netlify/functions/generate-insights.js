@@ -181,6 +181,26 @@ exports.handler = async (event) => {
       ? `\nToday's completed push group games:\n${finishedGames.join('\n')}`
       : '\nNo push group games today.';
 
+    // MTL/BOS context
+    const mtlST = ST['MTL'], bosST = ST['BOS'];
+    let mtlContext = '';
+    if(mtlST && bosST && ST['NYI']) {
+      const bosGl = 82-(bosST.wins+bosST.losses+bosST.otl);
+      const bosMax = bosST.pts + bosGl*2;
+      const atlSorted = ['BUF','TBL','MTL','BOS','OTT','DET','TOR','FLA']
+        .filter(t=>ST[t]).sort((a,b)=>ST[b].pts-ST[a].pts);
+      const mtlInWC = atlSorted.indexOf('MTL') >= 3;
+      const mtlGap = mtlST.pts - ST['NYI'].pts;
+      const metSorted = ['CAR','NYI','PIT','CBJ','PHI','WSH','NJD','NYR']
+        .filter(t=>ST[t]).sort((a,b)=>ST[b].pts-ST[a].pts);
+      const nyiMetRank = metSorted.indexOf('NYI')+1;
+      if(mtlInWC) {
+        mtlContext = `\nMTL ALERT: MTL has dropped out of ATL top-3 and is now in WC (${mtlST.pts}pts, ${Math.abs(mtlGap)}pts ${mtlGap>0?'ahead of':'behind'} NYI). Direct WC competitor. Root AGAINST MTL.`;
+      } else if(bosMax >= mtlST.pts) {
+        mtlContext = `\nMTL WATCH: MTL is ATL#3 (${mtlST.pts}pts, ${mtlGap}pts ahead of NYI). BOS (${bosST.pts}pts, ${bosGl}GL, max=${bosMax}) can still catch them. If BOS passes MTL, Montreal enters WC ${mtlGap}pts ahead of NYI. NYI plays MTL Apr 12 (H2H at home). Current rooting verdict: ${nyiMetRank<=2?'Root FOR MTL (keep in ATL = out of WC) — means root AGAINST BOS in BOS-MTL games. This flips if NYI drops to MET#3 or WC.':'Root AGAINST MTL — they are a direct WC threat.'}`;
+      }
+    }
+
     const gamesLeft = 82 - nyi.gp;
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
@@ -191,7 +211,7 @@ ${standingsStr}
 
 TIEBREAKER SITUATIONS (teams within 3pts of NYI):
 ${tbLines.length ? tbLines.join('\n') : 'No close tiebreaker situations'}
-${recentStr}
+${recentStr}${mtlContext}
 
 NYI has ${gamesLeft} games remaining. Season ends April 16, 2026.
 
