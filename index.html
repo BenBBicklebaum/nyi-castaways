@@ -450,18 +450,39 @@ function threatReason(team) {
 async function fetchStandings() {
   setStatus('Fetching standings...');
   try {
-    const r = await fetch('/api/standings');
+    let r;
+    try { r = await fetch('/api/standings'); }
+    catch(e) { r = await fetch('/.netlify/functions/nhl?type=standings'); }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     ST = {};
     (d.standings || []).forEach(row => {
-      const abbrev = row.teamAbbrev.default || row.teamAbbrev;
+      // teamAbbrev can be {default:"NYI"} or plain "NYI"
+      const abbrev = (row.teamAbbrev && typeof row.teamAbbrev === 'object')
+        ? row.teamAbbrev.default
+        : row.teamAbbrev;
+      if (!abbrev) return;
+      // conferenceAbbrev: "E" or "Eastern" - normalize
+      const confRaw = row.conferenceAbbrev || row.conferenceName || '';
+      const conf = confRaw.startsWith('E') ? 'E' : 'W';
+      // divisionAbbrev: "ATL", "MET", "CEN", "PAC" or full name
+      const divRaw = row.divisionAbbrev || row.divisionName || '';
+      let div = divRaw;
+      if (divRaw.includes('Atlantic') || divRaw === 'A') div = 'ATL';
+      else if (divRaw.includes('Metropolitan') || divRaw === 'M') div = 'MET';
+      else if (divRaw.includes('Central') || divRaw === 'C') div = 'CEN';
+      else if (divRaw.includes('Pacific') || divRaw === 'P') div = 'PAC';
       ST[abbrev] = {
-        wins: row.wins, losses: row.losses, otl: row.otLosses,
-        pts: row.points, gp: row.gamesPlayed,
-        conf: row.conferenceAbbrev, div: row.divisionAbbrev
+        wins: row.wins || 0,
+        losses: row.losses || 0,
+        otl: row.otLosses || 0,
+        pts: row.points || 0,
+        gp: row.gamesPlayed || 0,
+        conf, div
       };
     });
+    console.log('Standings loaded:', Object.keys(ST).length, 'teams');
+    console.log('NYI:', ST['NYI']);
     // Update standings date
     const dateEl = document.getElementById('standings-date');
     if (dateEl) {
@@ -968,7 +989,9 @@ function _renderScores(games) {
 
 async function _fetchScores() {
   try {
-    const r=fetch('/api/scores');
+    let r;
+    try { r = await fetch('/api/scores'); }
+    catch(e1) { r = await fetch('/.netlify/functions/nhl?type=scores'); }
     if(!r.ok) throw new Error(r.status);
     const d=await r.json();
     _renderScores(d.games||[]);
