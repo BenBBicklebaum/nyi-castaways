@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NYI Castaways Playoff Race Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --org:#F47D30; --nyi:#003087; --bg:#0f172a; --srf:#1e293b;
+  --bdr:rgba(255,255,255,.1); --muted:#64748b; --txt:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-size:.9rem}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#001f5c 0%,#003087 60%,#004db3 100%);padding:18px 20px 14px;border-bottom:3px solid var(--org)}
+.hdr h1{font-family:'Barlow Condensed',sans-serif;font-size:1.55rem;font-weight:900;letter-spacing:-.01em;color:#fff}
+.hdr h1 span{color:var(--org)}
+.hdr-sub{font-size:.72rem;color:rgba(255,255,255,.65);margin-top:3px}
+.hdr-date{font-size:.78rem;font-weight:700;color:#fff;margin-top:8px}
+.ref-btn{margin-top:8px;padding:5px 14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em}
+.ref-btn:hover{background:rgba(255,255,255,.25)}
+#status-bar{font-size:.62rem;color:rgba(255,255,255,.45);margin-top:4px;min-height:14px}
+
+/* SCORES */
+.scores-bar{background:#0a0f1e;padding:6px 16px 7px;border-bottom:2px solid var(--org)}
+.sc-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.12em;color:var(--org);text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.sc-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.sc-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:5px;min-width:0;cursor:pointer}
+.sc-nyi{border-color:var(--org)!important;background:rgba(244,125,48,.1)!important}
+.sc-live{border-color:#22c55e!important}
+.sc-match{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:700;color:#cbd5e1;display:flex;gap:3px;align-items:center}
+.sc-tm{font-size:.78rem;font-weight:900;color:#f1f5f9}
+.sc-at{color:#475569;font-size:.68rem}
+.sc-nums{display:flex;align-items:center;gap:3px;font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900;color:#f1f5f9}
+.sc-w{color:#fff}.sc-dash{color:#475569;font-size:.75rem}.sc-time{font-size:.78rem;color:#94a3b8}
+.sc-badge{font-size:.55rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:1px 4px;border-radius:3px}
+.bdg-fin{background:#1e293b;color:#64748b}.bdg-live{background:#16a34a;color:#fff}.bdg-pre{background:#1d4ed8;color:#fff}
+.sc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sc-dot-good{background:#16a34a}.sc-dot-bad{background:#dc2626;opacity:.7}.sc-dot-pre{background:#94a3b8}
+.sc-root-wrap{display:inline-flex;align-items:center;gap:3px}
+.sc-root-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:700;letter-spacing:.03em;opacity:.85}
+.sc-tap-ind{font-size:.6rem;opacity:.6}
+.sc-none{color:#64748b;font-size:.78rem;font-style:italic}
+#sc-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200}
+#sc-overlay.show{display:block}
+#sc-tooltip{display:none;position:fixed;z-index:201;background:#1e293b;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:10px 14px;font-size:.78rem;color:#e2e8f0;font-family:'Barlow',sans-serif;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:260px;pointer-events:none}
+#sc-tooltip strong{color:#fff;display:block;margin-bottom:3px}
+#sc-tooltip .tt-sub{color:#94a3b8;font-size:.7rem}
+
+/* MAIN */
+.main{max-width:1120px;margin:0 auto;padding:16px}
+.sec-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);border-bottom:1px solid var(--bdr);padding-bottom:5px;margin-bottom:10px;margin-top:20px}
+
+/* TABLES */
+.tbl-wrap{background:var(--srf);border:1px solid var(--bdr);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.tbl-top{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--bdr);cursor:pointer}
+.tbl-top:hover .sec-toggle-btn{color:var(--nyi)}
+.tbl-title{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--txt)}
+.tbl-ts{font-size:.65rem;color:var(--muted)}
+.sec-toggle-btn{font-size:.68rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+table{width:100%;border-collapse:collapse}
+th{background:#0f172a;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 8px;text-align:left;white-space:nowrap}
+td{padding:6px 8px;font-size:.76rem;border-top:1px solid var(--bdr)}
+.num{text-align:right}.muted{color:var(--muted)}
+.t-nm{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900}
+.hot{color:#22c55e;font-weight:800}.mid{color:#f59e0b;font-weight:700}.cold{color:#ef4444}
+.proj-col{color:#38bdf8}
+.tr-nyi td{background:rgba(0,48,135,.15)}
+.tr-out td{opacity:.7}
+
+/* POSITION BADGES */
+.pos-badge{font-size:.62rem;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:.05em;white-space:nowrap}
+.pos-div1{background:#16a34a;color:#fff}.pos-div2{background:#2563eb;color:#fff}.pos-div3{background:#7c3aed;color:#fff}
+.pos-wc1{background:#0891b2;color:#fff}.pos-wc2{background:#0369a1;color:#fff}
+.pos-out{background:#334155;color:#94a3b8}
+
+/* SECTION SEPARATORS */
+.sep-row td{background:#0f172a;padding:4px 10px}
+.sep-label{font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;border-top:1px solid rgba(255,255,255,.06);padding-top:4px}
+.sep-atl .sep-label{color:#2563eb}.sep-met .sep-label{color:var(--org)}.sep-wc .sep-label{color:#0891b2}.sep-out .sep-label{color:#64748b}
+
+/* RACE TABLE */
+.expand-all-row{padding:6px 12px;border-bottom:1px solid var(--bdr)}
+.expand-all-btn{font-size:.68rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--muted);cursor:pointer;background:none;border:none;padding:0}
+.race-sec-hd td{padding:0}
+.race-sec-hd .sec-banner{display:block;padding:5px 10px;font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em}
+.ban-met{background:rgba(244,125,48,.12);color:var(--org)}.ban-wc{background:rgba(8,145,178,.1);color:#0891b2}.ban-bub{background:rgba(100,116,139,.08);color:#64748b}
+.tr-chips td{padding:4px 8px 8px}
+.chip-row{display:flex;flex-wrap:wrap;gap:4px;padding:2px 0}
+.chip{border-radius:4px;padding:3px 7px;font-family:'Barlow Condensed',sans-serif;font-size:.76rem;font-weight:700;white-space:nowrap}
+.chip-h{background:rgba(0,48,135,.3);border:1px solid rgba(0,48,135,.5)}
+.chip-a{background:rgba(100,116,139,.2);border:1px solid rgba(100,116,139,.3)}
+.chip-h2h{background:rgba(244,125,48,.2);border:1px solid rgba(244,125,48,.4)}
+.toggle-btn{color:var(--muted);font-size:.72rem;cursor:pointer;padding:2px 0;font-family:'Barlow',sans-serif;letter-spacing:.01em;background:none;border:none}
+
+/* CLINCH */
+.cc-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:16px}
+.cc{background:var(--srf);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;cursor:pointer}
+.cc-pace{border-color:var(--org)!important}
+.cc-lbl{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.cc-val{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;color:var(--txt)}
+.cc-badge{display:inline-block;font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:4px;margin-top:5px;letter-spacing:.04em}
+.bdg-good{background:rgba(22,163,74,.2);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
+.bdg-need{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.bdg-pace{background:rgba(244,125,48,.15);color:var(--org);border:1px solid rgba(244,125,48,.25)}
+#clinch-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:200}
+#clinch-overlay.show{display:block}
+#clinch-tooltip{display:none;position:fixed;z-index:201;background:#1e293b;border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:10px 14px;font-size:.76rem;color:#e2e8f0;font-family:'Barlow',sans-serif;line-height:1.6;box-shadow:0 8px 24px rgba(0,0,0,.6);max-width:280px;pointer-events:none}
+
+/* INSIGHTS */
+.ins-group-hd{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--nyi);border-radius:8px;cursor:pointer;margin-bottom:6px}
+.ins-group-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.8rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+.ins-chev{color:rgba(255,255,255,.7);font-size:.7rem}
+.ins-tier-hd{display:flex;justify-content:space-between;align-items:center;padding:5px 12px;background:rgba(255,255,255,.06);border-radius:6px;cursor:pointer;margin-bottom:5px;font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tier-chev{font-size:.65rem}
+.ins-stack{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.ins-card{background:var(--srf);border:1px solid var(--bdr);border-radius:8px;padding:11px 13px;border-left:4px solid var(--nyi)}
+.ins-deep{border-left-color:#7c3aed!important;background:linear-gradient(to right,#1a1033,var(--srf) 40%)!important}
+.ins-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+.ins-txt{font-size:.8rem;line-height:1.55;color:var(--txt)}
+.ins-loading{color:var(--muted);font-size:.78rem;font-style:italic;padding:10px 0}
+.ai-badge{font-size:.55rem;background:rgba(124,58,237,.2);color:#a78bfa;border:1px solid rgba(124,58,237,.3);padding:1px 5px;border-radius:3px;font-weight:700;letter-spacing:.04em;vertical-align:middle;margin-left:5px}
+
+/* FIELD INSIGHTS */
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-bottom:16px}
+.fc{background:var(--srf);border:1px solid var(--bdr);border-radius:9px;padding:12px 14px}
+.fc-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.fc-pts{font-size:.65rem;color:var(--muted);margin-left:auto}
+.fc-body{font-size:.78rem;line-height:1.5;color:var(--txt)}
+
+/* METHODOLOGY */
+details summary{padding:10px 14px;font-family:'Barlow Condensed',sans-serif;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);cursor:pointer;background:var(--srf);border-radius:8px}
+details[open] summary{border-radius:8px 8px 0 0}
+.meth-body{background:var(--srf);padding:12px 14px;border-radius:0 0 8px 8px;font-size:.76rem;line-height:1.6;color:var(--muted)}
+
+/* FOOTER */
+.footer{text-align:center;padding:16px;font-size:.7rem;color:var(--muted);border-top:1px solid var(--bdr);margin-top:20px}
+
+@media(max-width:600px){
+  th,td{padding:5px 5px;font-size:.72rem}
+  .fc-grid{grid-template-columns:1fr}
+  .cc-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <h1>NYI Castaways <span>Playoff Race Hub</span></h1>
+  <div class="hdr-sub">Eastern Conference Playoff Race Hub · Powered by H007</div>
+  <div class="hdr-date" id="standings-date">Loading standings...</div>
+  <button class="ref-btn" onclick="loadAll()">↻ REFRESH</button>
+  <div id="status-bar"></div>
+</div>
+
+<!-- SCORES -->
+<div class="scores-bar">
+  <div class="sc-lbl">
+    <span>🏒 Race Group Games</span>
+    <span id="sc-ts" style="font-size:.6rem;opacity:.55"></span>
+  </div>
+  <div class="sc-row" id="sc-row"><span class="sc-none">Loading scores...</span></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- EAST STANDINGS -->
+  <div class="sec-lbl">Eastern Conference Standings</div>
+  <div class="tbl-wrap">
+    <div class="tbl-top" onclick="toggleSection('east-body','east-chev')" style="cursor:pointer">
+      <span class="tbl-title">Eastern Conference · All 16 Teams</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="sec-toggle-btn" id="east-chev">▲ Collapse</span>
+      </span>
+    </div>
+    <div id="east-body">
+      <table>
+        <thead><tr>
+          <th class="num">#</th><th>Team</th><th>Position</th>
+          <th class="num">PTS</th><th class="num">W</th><th class="num muted">L</th>
+          <th class="num muted">OTL</th><th class="num">GP</th>
+          <th class="num muted">LEFT</th><th class="num muted">PTS%</th>
+          <th class="num proj-col">PROJ</th>
+        </tr></thead>
+        <tbody id="east-tbody"><tr><td colspan="11" class="ins-loading">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PLAYOFF RACE TABLE -->
+  <div class="sec-lbl">Playoff Race</div>
+  <div class="tbl-wrap">
+    <div class="tbl-top" onclick="toggleSection('race-body','race-chev')" style="cursor:pointer">
+      <span class="tbl-title">Metro #2/#3 · Wild Card 1/2 · Bubble</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span class="sec-toggle-btn" id="race-chev">▲ Collapse</span>
+      </span>
+    </div>
+    <div id="race-body">
+      <div class="expand-all-row">
+        <button class="expand-all-btn" id="expand-all-btn" onclick="toggleAll()">▶ Expand All Schedules</button>
+      </div>
+      <table>
+        <thead><tr>
+          <th>Team</th><th>Pos</th>
+          <th class="num">PTS</th><th class="num">W</th><th class="num muted">L</th>
+          <th class="num muted">OTL</th><th class="num">GP</th>
+          <th class="num muted">LEFT</th><th class="num muted">SOS</th>
+          <th class="num muted">SOS#</th><th class="num proj-col">PROJ</th>
+        </tr></thead>
+        <tbody id="race-tbody"><tr><td colspan="11" class="ins-loading">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CLINCH TRACKER -->
+  <div class="sec-lbl">Clinch Tracker <span style="font-size:.55rem;opacity:.6">· tap for logic</span></div>
+  <div class="cc-row" id="cc-row">
+    <div class="ins-loading">Loading...</div>
+  </div>
+
+  <!-- ISLANDERS BREAKDOWN -->
+  <div class="sec-lbl">Islanders Breakdown</div>
+
+  <div class="ins-group-hd" onclick="toggleInsGroup('metro-ins','metro-chev')">
+    <span class="ins-group-lbl">🏒 Metropolitan Race</span>
+    <span class="ins-chev" id="metro-chev">▼</span>
+  </div>
+  <div id="metro-ins">
+    <div class="ins-tier-hd" onclick="toggleTier('metro-obs-body','metro-obs-chev')">
+      <span>Observations</span><span class="tier-chev" id="metro-obs-chev">▼</span>
+    </div>
+    <div id="metro-obs-body" class="ins-stack">
+      <div id="metro-obs-cards" class="ins-loading">Loading...</div>
+    </div>
+    <div class="ins-tier-hd" onclick="toggleTier('metro-deep-body','metro-deep-chev')">
+      <span>Deep Insights </span>
+      <span class="tier-chev" id="metro-deep-chev">▶</span>
+    </div>
+    <div id="metro-deep-body" class="ins-stack" style="display:none">
+      <div id="metro-deep-cards" class="ins-loading">Loading...</div>
+    </div>
+  </div>
+
+  <div class="ins-group-hd" onclick="toggleInsGroup('wc-ins','wc-chev')" style="margin-top:10px">
+    <span class="ins-group-lbl">🃏 Wild Card Race</span>
+    <span class="ins-chev" id="wc-chev">▼</span>
+  </div>
+  <div id="wc-ins">
+    <div class="ins-tier-hd" onclick="toggleTier('wc-obs-body','wc-obs-chev')">
+      <span>Observations</span><span class="tier-chev" id="wc-obs-chev">▶</span>
+    </div>
+    <div id="wc-obs-body" class="ins-stack" style="display:none">
+      <div id="wc-obs-cards" class="ins-loading">Loading...</div>
+    </div>
+    <div class="ins-tier-hd" onclick="toggleTier('wc-deep-body','wc-deep-chev')">
+      <span>Deep Insights </span>
+      <span class="tier-chev" id="wc-deep-chev">▶</span>
+    </div>
+    <div id="wc-deep-body" class="ins-stack" style="display:none">
+      <div id="wc-deep-cards" class="ins-loading">Loading...</div>
+    </div>
+  </div>
+
+  <!-- FIELD INSIGHTS -->
+  <div class="sec-lbl" style="margin-top:20px">The Rest of the Field</div>
+  <div class="fc-grid" id="field-grid"><div class="ins-loading">Loading...</div></div>
+
+  <!-- METHODOLOGY -->
+  <details>
+    <summary>Methodology</summary>
+    <div class="meth-body">
+      <p><strong>SOS (Strength of Schedule)</strong> — Average points percentage of remaining opponents, calculated live from current standings filtered to games not yet played.</p>
+      <p style="margin-top:8px"><strong>Projected Points</strong> — Current pts ÷ GP × 82, rounded to nearest integer.</p>
+      <p style="margin-top:8px"><strong>Clinch Thresholds</strong> — Based on pace projections of the first team outside each cutline. Requires NYI to reach that threshold to clinch on pace.</p>
+      <p style="margin-top:8px"><strong>Deep Insights</strong> — AI-generated each page load using current standings, SOS, H2H schedule, and convergence data. Powered by Claude.</p>
+      <p style="margin-top:8px"><strong>Rooting Interest</strong> — Multi-factor threat score: pts gap, projected pts, SOS rank, games remaining, H2H vs NYI, WC position proximity.</p>
+    </div>
+  </details>
+</div>
+
+<div class="footer">NYI Castaways Playoff Race Hub · Powered by H007 Analytics</div>
+
+<div id="sc-overlay"></div>
+<div id="sc-tooltip"></div>
+<div id="clinch-overlay" onclick="closeClinch()"></div>
+<div id="clinch-tooltip"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// BAKED-IN CONSTANTS (schedule + team info, never changes mid-season)
+// ═══════════════════════════════════════════════════════════════════
+const FULL_SCHEDULE = {"BOS": [["Mar 29", "CBJ", "A"], ["Mar 31", "DAL", "H"], ["Apr 2", "FLA", "A"], ["Apr 4", "TBL", "A"], ["Apr 5", "PHI", "A"], ["Apr 7", "CAR", "A"], ["Apr 11", "TBL", "H"], ["Apr 12", "CBJ", "A"], ["Apr 14", "NJD", "H"]], "BUF": [["Mar 31", "NYI", "H"], ["Apr 2", "OTT", "A"], ["Apr 4", "WSH", "A"], ["Apr 6", "TBL", "H"], ["Apr 8", "NYR", "A"], ["Apr 9", "CBJ", "H"], ["Apr 13", "CHI", "A"], ["Apr 15", "DAL", "H"]], "CAR": [["Mar 29", "MTL", "H"], ["Mar 31", "CBJ", "A"], ["Apr 2", "CBJ", "H"], ["Apr 4", "NYI", "H"], ["Apr 5", "OTT", "A"], ["Apr 7", "BOS", "H"], ["Apr 9", "CHI", "A"], ["Apr 11", "UTA", "A"], ["Apr 13", "PHI", "A"], ["Apr 14", "NYI", "A"]], "CBJ": [["Mar 29", "BOS", "H"], ["Mar 31", "CAR", "H"], ["Apr 2", "CAR", "A"], ["Apr 4", "WPG", "H"], ["Apr 7", "DET", "A"], ["Apr 9", "BUF", "A"], ["Apr 11", "MTL", "A"], ["Apr 12", "BOS", "H"], ["Apr 14", "WSH", "H"]], "DET": [["Mar 31", "PIT", "A"], ["Apr 2", "PHI", "A"], ["Apr 4", "NYR", "A"], ["Apr 5", "MIN", "H"], ["Apr 7", "CBJ", "H"], ["Apr 9", "PHI", "A"], ["Apr 11", "NJD", "H"], ["Apr 13", "TBL", "A"], ["Apr 15", "FLA", "A"]], "FLA": [["Mar 29", "NYR", "A"], ["Mar 31", "OTT", "H"], ["Apr 2", "BOS", "H"], ["Apr 4", "PIT", "A"], ["Apr 5", "PIT", "A"], ["Apr 7", "MTL", "A"], ["Apr 9", "OTT", "A"], ["Apr 11", "TOR", "A"], ["Apr 13", "NYR", "H"], ["Apr 15", "DET", "H"]], "MTL": [["Mar 29", "CAR", "A"], ["Mar 31", "TBL", "A"], ["Apr 2", "NYR", "A"], ["Apr 4", "NJD", "A"], ["Apr 5", "NJD", "H"], ["Apr 7", "FLA", "H"], ["Apr 9", "TBL", "H"], ["Apr 11", "CBJ", "H"], ["Apr 12", "NYI", "A"], ["Apr 14", "PHI", "A"]], "NJD": [["Mar 29", "CHI", "H"], ["Mar 31", "NYR", "A"], ["Apr 2", "WSH", "H"], ["Apr 4", "MTL", "H"], ["Apr 5", "MTL", "A"], ["Apr 7", "PHI", "H"], ["Apr 9", "PIT", "A"], ["Apr 11", "DET", "A"], ["Apr 12", "OTT", "H"], ["Apr 14", "BOS", "A"]], "NYI": [["Mar 30", "PIT", "H"], ["Mar 31", "BUF", "A"], ["Apr 3", "PHI", "H"], ["Apr 4", "CAR", "A"], ["Apr 9", "TOR", "H"], ["Apr 11", "OTT", "H"], ["Apr 12", "MTL", "H"], ["Apr 14", "CAR", "H"]], "NYR": [["Mar 29", "FLA", "H"], ["Mar 31", "NJD", "H"], ["Apr 2", "MTL", "H"], ["Apr 4", "DET", "H"], ["Apr 5", "WSH", "A"], ["Apr 8", "BUF", "H"], ["Apr 11", "DAL", "A"], ["Apr 13", "FLA", "A"], ["Apr 15", "TBL", "H"]], "OTT": [["Mar 31", "FLA", "A"], ["Apr 2", "BUF", "H"], ["Apr 4", "MIN", "H"], ["Apr 5", "CAR", "H"], ["Apr 7", "TBL", "H"], ["Apr 9", "FLA", "H"], ["Apr 11", "NYI", "A"], ["Apr 12", "NJD", "A"], ["Apr 15", "TOR", "H"]], "PHI": [["Mar 29", "DAL", "H"], ["Mar 31", "WSH", "A"], ["Apr 2", "DET", "H"], ["Apr 3", "NYI", "A"], ["Apr 5", "BOS", "H"], ["Apr 7", "NJD", "A"], ["Apr 9", "DET", "H"], ["Apr 11", "WPG", "A"], ["Apr 13", "CAR", "H"], ["Apr 14", "MTL", "H"]], "PIT": [["Mar 30", "NYI", "A"], ["Mar 31", "DET", "H"], ["Apr 2", "TBL", "A"], ["Apr 4", "FLA", "H"], ["Apr 5", "FLA", "H"], ["Apr 9", "NJD", "H"], ["Apr 11", "WSH", "H"], ["Apr 12", "WSH", "A"], ["Apr 14", "STL", "A"]], "TBL": [["Mar 29", "NSH", "H"], ["Mar 31", "MTL", "H"], ["Apr 2", "PIT", "H"], ["Apr 4", "BOS", "H"], ["Apr 6", "BUF", "A"], ["Apr 7", "OTT", "A"], ["Apr 9", "MTL", "A"], ["Apr 11", "BOS", "A"], ["Apr 13", "DET", "H"], ["Apr 15", "NYR", "A"]], "TOR": [["Mar 30", "ANA", "A"], ["Apr 2", "SJS", "A"], ["Apr 4", "LAK", "A"], ["Apr 8", "WSH", "H"], ["Apr 9", "NYI", "A"], ["Apr 11", "FLA", "H"], ["Apr 13", "DAL", "H"], ["Apr 15", "BUF", "A"]], "WSH": [["Mar 31", "PHI", "A"], ["Apr 2", "NJD", "A"], ["Apr 4", "BUF", "H"], ["Apr 5", "NYR", "H"], ["Apr 8", "TOR", "A"], ["Apr 11", "PIT", "A"], ["Apr 12", "PIT", "H"], ["Apr 14", "CBJ", "A"]], "ANA": [["Mar 30", "TOR", "H"], ["Apr 1", "SJS", "A"], ["Apr 3", "STL", "A"], ["Apr 7", "COL", "H"], ["Apr 9", "UTA", "H"], ["Apr 11", "LAK", "A"], ["Apr 13", "CGY", "A"], ["Apr 14", "CGY", "A"], ["Apr 15", "MIN", "A"]], "CGY": [["Mar 30", "COL", "A"], ["Apr 2", "VGK", "A"], ["Apr 4", "MIN", "H"], ["Apr 7", "DAL", "A"], ["Apr 9", "COL", "A"], ["Apr 11", "SEA", "A"], ["Apr 12", "UTA", "H"], ["Apr 14", "COL", "H"], ["Apr 16", "LAK", "H"]], "CHI": [["Mar 29", "NJD", "A"], ["Mar 31", "WPG", "A"], ["Apr 2", "EDM", "A"], ["Apr 4", "SEA", "A"], ["Apr 6", "SJS", "A"], ["Apr 9", "CAR", "H"], ["Apr 11", "STL", "H"], ["Apr 13", "BUF", "H"], ["Apr 15", "SJS", "H"]], "COL": [["Mar 30", "CGY", "H"], ["Apr 1", "VAN", "H"], ["Apr 4", "DAL", "A"], ["Apr 5", "STL", "H"], ["Apr 7", "STL", "A"], ["Apr 9", "CGY", "H"], ["Apr 11", "VGK", "H"], ["Apr 13", "EDM", "A"], ["Apr 14", "CGY", "A"], ["Apr 16", "SEA", "H"]], "DAL": [["Mar 29", "PHI", "A"], ["Mar 31", "BOS", "A"], ["Apr 2", "WPG", "H"], ["Apr 4", "COL", "H"], ["Apr 7", "CGY", "H"], ["Apr 9", "MIN", "H"], ["Apr 11", "NYR", "H"], ["Apr 13", "TOR", "A"], ["Apr 15", "BUF", "A"]], "EDM": [["Mar 31", "SEA", "A"], ["Apr 2", "CHI", "H"], ["Apr 4", "VGK", "H"], ["Apr 7", "UTA", "A"], ["Apr 8", "SJS", "A"], ["Apr 11", "LAK", "A"], ["Apr 13", "COL", "H"], ["Apr 16", "VAN", "H"]], "LAK": [["Apr 1", "STL", "A"], ["Apr 2", "NSH", "H"], ["Apr 4", "TOR", "H"], ["Apr 6", "NSH", "H"], ["Apr 9", "VAN", "H"], ["Apr 11", "EDM", "H"], ["Apr 13", "SEA", "A"], ["Apr 14", "VAN", "A"], ["Apr 16", "CGY", "A"]], "MIN": [["Apr 2", "VAN", "H"], ["Apr 4", "OTT", "A"], ["Apr 5", "DET", "A"], ["Apr 7", "SEA", "H"], ["Apr 9", "DAL", "A"], ["Apr 11", "NSH", "A"], ["Apr 13", "STL", "A"], ["Apr 14", "ANA", "H"]], "NSH": [["Mar 29", "TBL", "A"], ["Apr 2", "LAK", "A"], ["Apr 4", "SJS", "A"], ["Apr 6", "LAK", "A"], ["Apr 7", "ANA", "A"], ["Apr 9", "UTA", "A"], ["Apr 11", "MIN", "H"], ["Apr 13", "SJS", "H"], ["Apr 16", "ANA", "H"]], "SEA": [["Mar 31", "EDM", "A"], ["Apr 2", "UTA", "H"], ["Apr 4", "CHI", "H"], ["Apr 6", "WPG", "A"], ["Apr 7", "MIN", "A"], ["Apr 9", "VGK", "H"], ["Apr 11", "CGY", "H"], ["Apr 13", "LAK", "H"], ["Apr 15", "VGK", "A"], ["Apr 16", "COL", "A"]], "SJS": [["Mar 30", "STL", "H"], ["Apr 1", "ANA", "H"], ["Apr 2", "TOR", "H"], ["Apr 4", "NSH", "H"], ["Apr 6", "CHI", "H"], ["Apr 8", "EDM", "H"], ["Apr 9", "ANA", "A"], ["Apr 11", "VAN", "H"], ["Apr 13", "NSH", "A"], ["Apr 15", "CHI", "A"], ["Apr 16", "WPG", "A"]], "STL": [["Mar 30", "SJS", "A"], ["Apr 1", "LAK", "H"], ["Apr 3", "ANA", "H"], ["Apr 5", "COL", "A"], ["Apr 7", "COL", "H"], ["Apr 9", "WPG", "H"], ["Apr 11", "CHI", "A"], ["Apr 13", "MIN", "H"], ["Apr 14", "PIT", "H"], ["Apr 16", "UTA", "A"]], "UTA": [["Mar 29", "FLA", "H"], ["Apr 2", "SEA", "A"], ["Apr 4", "VAN", "H"], ["Apr 7", "EDM", "H"], ["Apr 9", "NSH", "H"], ["Apr 11", "CAR", "H"], ["Apr 14", "WPG", "H"], ["Apr 16", "STL", "H"]], "VGK": [["Mar 30", "VAN", "H"], ["Apr 2", "CGY", "H"], ["Apr 4", "EDM", "A"], ["Apr 7", "VAN", "A"], ["Apr 9", "SEA", "A"], ["Apr 11", "COL", "A"], ["Apr 13", "WPG", "H"], ["Apr 15", "SEA", "H"]], "VAN": [["Mar 30", "VGK", "A"], ["Apr 1", "COL", "A"], ["Apr 2", "MIN", "A"], ["Apr 4", "UTA", "H"], ["Apr 7", "VGK", "H"], ["Apr 9", "LAK", "A"], ["Apr 11", "SJS", "A"], ["Apr 12", "ANA", "A"], ["Apr 14", "LAK", "H"], ["Apr 16", "EDM", "A"]], "WPG": [["Mar 31", "CHI", "A"], ["Apr 2", "DAL", "A"], ["Apr 4", "CBJ", "A"], ["Apr 6", "SEA", "H"], ["Apr 9", "STL", "A"], ["Apr 11", "PHI", "H"], ["Apr 13", "VGK", "A"], ["Apr 14", "UTA", "A"], ["Apr 16", "SJS", "H"]]};
+const TEAM_INFO     = {"CAR": ["E", "MET"], "BUF": ["E", "ATL"], "TBL": ["E", "ATL"], "MTL": ["E", "ATL"], "BOS": ["E", "ATL"], "NYI": ["E", "MET"], "PIT": ["E", "MET"], "CBJ": ["E", "MET"], "OTT": ["E", "ATL"], "DET": ["E", "ATL"], "PHI": ["E", "MET"], "WSH": ["E", "MET"], "NJD": ["E", "MET"], "TOR": ["E", "ATL"], "FLA": ["E", "ATL"], "NYR": ["E", "MET"], "COL": ["W", "CEN"], "DAL": ["W", "CEN"], "MIN": ["W", "CEN"], "ANA": ["W", "PAC"], "EDM": ["W", "PAC"], "UTA": ["W", "CEN"], "VGK": ["W", "PAC"], "NSH": ["W", "CEN"], "LAK": ["W", "PAC"], "SEA": ["W", "PAC"], "WPG": ["W", "CEN"], "SJS": ["W", "PAC"], "STL": ["W", "CEN"], "CGY": ["W", "PAC"], "CHI": ["W", "CEN"], "VAN": ["W", "PAC"]};   // {abbrev: [conf, div]}
+const RACE_GROUP    = new Set(["BOS", "CBJ", "DET", "NYI", "OTT", "PHI", "PIT"]);
+const TEAM_COLORS   = {"CAR": "#CC0000", "BUF": "#003087", "TBL": "#002868", "MTL": "#AF1E2D", "BOS": "#FFB81C", "NYI": "#00539B", "PIT": "#FCB514", "CBJ": "#002654", "OTT": "#C52032", "DET": "#CE1126", "PHI": "#F74902", "WSH": "#C8102E", "NJD": "#003DA5", "TOR": "#003E7E", "FLA": "#C8102E", "NYR": "#0038A8", "COL": "#475569", "DAL": "#475569", "MIN": "#475569", "ANA": "#475569", "EDM": "#475569", "UTA": "#475569", "VGK": "#475569", "NSH": "#475569", "LAK": "#475569", "SEA": "#475569", "WPG": "#475569", "SJS": "#475569", "STL": "#475569", "CGY": "#475569", "CHI": "#475569", "VAN": "#475569"};
+
+// ═══════════════════════════════════════════════════════════════════
+// DATE UTILITIES
+// ═══════════════════════════════════════════════════════════════════
+const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+
+function parseGameDate(s) {
+  // "Mar 30" -> Date object in 2026
+  const parts = s.split(' ');
+  return new Date(2026, MONTHS[parts[0]], parseInt(parts[1]));
+}
+
+function todayDate() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function remaining(team) {
+  const today = todayDate();
+  return (FULL_SCHEDULE[team] || []).filter(g => parseGameDate(g[0]) >= today);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ANALYTICS ENGINE
+// ═══════════════════════════════════════════════════════════════════
+let ST = {}; // standings: {abbrev: {wins,losses,otl,pts,gp,conf,div}}
+
+function ptsPct(t) {
+  const s = ST[t]; if (!s) return 0;
+  const gp = s.wins + s.losses + s.otl;
+  return gp ? (s.wins*2 + s.otl) / (gp*2) : 0;
+}
+
+function sos(team) {
+  const rem = remaining(team);
+  if (!rem.length) return 0;
+  const total = rem.reduce((acc, g) => acc + ptsPct(g[1]), 0);
+  return total / rem.length;
+}
+
+function sosRank(team) {
+  // 1 = hardest
+  const allSos = Object.keys(ST).map(t => ({t, s: sos(t)}));
+  allSos.sort((a,b) => b.s - a.s);
+  const idx = allSos.findIndex(x => x.t === team);
+  return idx + 1;
+}
+
+function projPts(team) {
+  const s = ST[team]; if (!s) return 0;
+  const gp = s.wins + s.losses + s.otl;
+  return gp ? Math.round(s.pts / gp * 82) : s.pts;
+}
+
+function pacePts(team) { return projPts(team); }
+
+// Division/conference helpers
+function eastTeams() {
+  return Object.keys(ST).filter(t => TEAM_INFO[t] && TEAM_INFO[t][0] === 'E');
+}
+function divTeams(div) {
+  return eastTeams().filter(t => TEAM_INFO[t][1] === div);
+}
+function sortedDiv(div) {
+  return divTeams(div).sort((a,b) => ST[b].pts - ST[a].pts);
+}
+function wcPool() {
+  const atl3 = new Set(sortedDiv('ATL').slice(0,3));
+  const met3 = new Set(sortedDiv('MET').slice(0,3));
+  const dq   = new Set([...atl3, ...met3]);
+  return eastTeams().filter(t => !dq.has(t)).sort((a,b) => ST[b].pts - ST[a].pts);
+}
+function getPos(team) {
+  const met = sortedDiv('MET');
+  const atl = sortedDiv('ATL');
+  const wcp = wcPool();
+  const mi = met.indexOf(team);
+  const ai = atl.indexOf(team);
+  const wi = wcp.indexOf(team);
+  if (mi >= 0 && mi < 3) return {lbl:`MET #${mi+1}`, cls:`pos-div${mi+1}`};
+  if (ai >= 0 && ai < 3) return {lbl:`ATL #${ai+1}`, cls:`pos-div${ai+1}`};
+  if (wi === 0) return {lbl:'WC 1', cls:'pos-wc1'};
+  if (wi === 1) return {lbl:'WC 2', cls:'pos-wc2'};
+  if (wi > 1)  return {lbl:`–${ST[wcp[1]].pts - ST[team].pts}`, cls:'pos-out'};
+  return {lbl:'—', cls:'pos-out'};
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ROOTING INTEREST
+// ═══════════════════════════════════════════════════════════════════
+function threatScore(team) {
+  const s = ST[team]; if (!s) return 0;
+  const nyi = ST['NYI']; if (!nyi) return 0;
+  const gl = 82 - (s.wins+s.losses+s.otl);
+  const gapScore  = Math.max(0, 12 - (nyi.pts - s.pts)) * 3;
+  const projScore = projPts(team) / 10;
+  const sosScore  = (0.700 - sos(team)) * 20;
+  const glScore   = gl * 0.5;
+  const nyiRem    = remaining('NYI');
+  const h2hScore  = nyiRem.filter(g => g[1] === team).length * 4;
+  const wcp = wcPool();
+  const wi = wcp.indexOf(team);
+  const posScore = Math.max(0, 8 - (wi >= 0 ? wi+1 : 8)) * 2;
+  return gapScore + projScore + sosScore + glScore + h2hScore + posScore;
+}
+
+function rootingInterest(away, home) {
+  if (away === 'NYI' || home === 'NYI') return null;
+  const ar = RACE_GROUP.has(away), hr = RACE_GROUP.has(home);
+  if (!ar && !hr) return null;
+  if (ar && !hr) return home;
+  if (hr && !ar) return away;
+  return threatScore(away) >= threatScore(home) ? home : away;
+}
+
+function threatReason(team) {
+  const s = ST[team]; if (!s) return '';
+  const nyi = ST['NYI']; if (!nyi) return '';
+  const gp = s.wins+s.losses+s.otl, gl = 82-gp;
+  const proj = projPts(team);
+  const gap = nyi.pts - s.pts;
+  const rank = sosRank(team);
+  const nyiGp = nyi.wins+nyi.losses+nyi.otl, nyiGl = 82-nyiGp;
+  const h2h = remaining('NYI').filter(g=>g[1]===team).length;
+
+  let parts = [];
+  if (gap < 0) parts.push(`${Math.abs(gap)}pt${Math.abs(gap)!==1?'s':''} ahead of NYI`);
+  else if (gap <= 2) parts.push(`only ${gap}pt${gap!==1?'s':''} back`);
+  else if (gap <= 5) parts.push(`${gap}pts back`);
+  else parts.push(`${gap}pts behind NYI`);
+  parts.push(`projects ${proj}pts`);
+  if (rank <= 8) parts.push(`tough sched (#${rank} of 32)`);
+  else if (rank >= 22) parts.push(`easy sched (#${rank} of 32)`);
+  if (h2h) parts.push(`${h2h} H2H vs NYI left`);
+
+  let risks = [];
+  const glDiff = gl - nyiGl;
+  if (glDiff >= 2) risks.push(`${glDiff} more GP remaining than NYI`);
+  else if (glDiff <= -1) risks.push(`${Math.abs(glDiff)} fewer GP remaining`);
+  if (rank >= 20) risks.push(`easy sched (#${rank} of 32)`);
+  if (proj < nyi.pts) risks.push(`pace falls short at ${proj}pts`);
+
+  return parts.join(', ') + (risks.length ? ' · risk: ' + risks.join(', ') : '');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STANDINGS FETCH + RENDER
+// ═══════════════════════════════════════════════════════════════════
+async function fetchStandings() {
+  setStatus('Fetching standings...');
+  try {
+    const r = await fetch('/api/standings');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    ST = {};
+    (d.standings || []).forEach(row => {
+      const abbrev = row.teamAbbrev.default || row.teamAbbrev;
+      ST[abbrev] = {
+        wins: row.wins, losses: row.losses, otl: row.otLosses,
+        pts: row.points, gp: row.gamesPlayed,
+        conf: row.conferenceAbbrev, div: row.divisionAbbrev
+      };
+    });
+    // Update standings date
+    const dateEl = document.getElementById('standings-date');
+    if (dateEl) {
+      const today = new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      dateEl.textContent = `Standings as of ${today}`;
+    }
+    setStatus('');
+    return true;
+  } catch(e) {
+    setStatus('⚠ Standings unavailable: ' + e.message);
+    return false;
+  }
+}
+
+function setStatus(msg) {
+  const el = document.getElementById('status-bar');
+  if (el) el.textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER EAST STANDINGS TABLE
+// ═══════════════════════════════════════════════════════════════════
+function renderEast() {
+  const tbody = document.getElementById('east-tbody');
+  if (!tbody) return;
+  const rows = [];
+
+  function sep(label, cls) {
+    rows.push(`<tr class="sep-row ${cls}"><td colspan="11"><span class="sep-label">${label}</span></td></tr>`);
+  }
+  function teamRow(t, posLbl, posCls, rank, isOut) {
+    const s = ST[t]; if (!s) return;
+    const gp = s.wins+s.losses+s.otl, gl = 82-gp;
+    const pp = ptsPct(t), proj = projPts(t);
+    const col = TEAM_COLORS[t] || '#fff';
+    const ptsCls = s.pts>=93?'hot':s.pts>=85?'mid':s.pts<80?'cold':'';
+    const rowCls = (t==='NYI'?'tr-nyi':'') + (isOut?' tr-out':'');
+    rows.push(`<tr class="${rowCls}">
+      <td class="num muted">${rank}</td>
+      <td><span class="t-nm" style="color:${col}">${t}</span></td>
+      <td><span class="pos-badge ${posCls}">${posLbl}</span></td>
+      <td class="num ${ptsCls}">${s.pts}</td>
+      <td class="num">${s.wins}</td>
+      <td class="num muted">${s.losses}</td>
+      <td class="num muted">${s.otl}</td>
+      <td class="num">${gp}</td>
+      <td class="num muted">${gl}</td>
+      <td class="num muted">${pp.toFixed(3)}</td>
+      <td class="num proj-col">${proj}</td>
+    </tr>`);
+  }
+
+  const atl = sortedDiv('ATL'), met = sortedDiv('MET'), wcp = wcPool();
+  sep('Atlantic Division','sep-atl');
+  atl.slice(0,3).forEach((t,i) => teamRow(t,`ATL #${i+1}`,`pos-div${i+1}`,i+1,false));
+  sep('Metropolitan Division','sep-met');
+  met.slice(0,3).forEach((t,i) => teamRow(t,`MET #${i+1}`,`pos-div${i+1}`,i+1,false));
+  sep('Wild Card','sep-wc');
+  wcp.slice(0,2).forEach((t,i) => teamRow(t,`WC ${i+1}`,i===0?'pos-wc1':'pos-wc2',i+1,false));
+  sep('Out of Playoff Position','sep-out');
+  wcp.slice(2).forEach((t,i) => {
+    const gap = ST[wcp[1]].pts - ST[t].pts;
+    teamRow(t,`–${gap}`,'pos-out','—',true);
+  });
+
+  tbody.innerHTML = rows.join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER RACE TABLE
+// ═══════════════════════════════════════════════════════════════════
+function renderRace() {
+  const tbody = document.getElementById('race-tbody');
+  if (!tbody) return;
+  const rows = [];
+  const met = sortedDiv('MET'), wcp = wcPool();
+  const wc2pts = wcp[1] ? ST[wcp[1]].pts : 0;
+
+  function banner(label, cls) {
+    rows.push(`<tr class="race-sec-hd"><td colspan="11"><span class="sec-banner ${cls}">${label}</span></td></tr>`);
+  }
+  function raceRow(t) {
+    const s = ST[t]; if (!s) return;
+    const gp = s.wins+s.losses+s.otl, gl = 82-gp;
+    const sосVal = sos(t), rank = sosRank(t), proj = projPts(t);
+    const col = TEAM_COLORS[t]||'#fff';
+    const pos = getPos(t);
+    const ptsCls = s.pts>=93?'hot':s.pts>=85?'mid':s.pts<80?'cold':'';
+    const rowCls = t==='NYI'?'tr-nyi':'';
+    const uid = 'sched-'+t;
+
+    // Build chip schedule
+    const rem = remaining(t);
+    const chips = rem.map(g => {
+      const [dt,opp,ha] = g;
+      const isH2H = RACE_GROUP.has(opp);
+      const chipCls = isH2H ? 'chip chip-h2h' : (ha==='H'?'chip chip-h':'chip chip-a');
+      const oppCol = TEAM_COLORS[opp]||'#fff';
+      return `<span class="${chipCls}" style="color:${oppCol}">${ha==='H'?'vs':'@'}${opp}</span>`;
+    }).join('');
+
+    rows.push(`<tr class="${rowCls}">
+      <td><span class="t-nm" style="color:${col}">${t}</span></td>
+      <td><span class="pos-badge ${pos.cls}">${pos.lbl}</span></td>
+      <td class="num ${ptsCls}">${s.pts}</td>
+      <td class="num">${s.wins}</td>
+      <td class="num muted">${s.losses}</td>
+      <td class="num muted">${s.otl}</td>
+      <td class="num">${gp}</td>
+      <td class="num muted">${gl}</td>
+      <td class="num muted">${sосVal.toFixed(3)}</td>
+      <td class="num muted">#${rank}</td>
+      <td class="num proj-col">${proj}</td>
+    </tr>
+    <tr class="tr-chips" id="${uid}" style="display:none">
+      <td colspan="11">
+        <div class="chip-row">${chips}</div>
+        <button class="toggle-btn" onclick="toggleSched('${uid}',this)">▶ Show remaining games</button>
+      </td>
+    </tr>
+    <tr style="display:none" id="${uid}-placeholder"></tr>`);
+  }
+
+  // Metro #2 and #3
+  banner('Metropolitan Division Race','ban-met');
+  [met[1], met[2]].filter(Boolean).forEach(raceRow);
+
+  // WC 1 and 2
+  banner('Wild Card','ban-wc');
+  wcp.slice(0,2).forEach(raceRow);
+
+  // Bubble
+  const bubbleTeams = wcp.slice(2).filter(t => ST[wcp[1]].pts - ST[t].pts <= 6);
+  if (bubbleTeams.length) {
+    banner('Bubble','ban-bub');
+    bubbleTeams.forEach(raceRow);
+  }
+
+  tbody.innerHTML = rows.join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CLINCH TRACKER
+// ═══════════════════════════════════════════════════════════════════
+function renderClinch() {
+  const row = document.getElementById('cc-row');
+  if (!row || !ST['NYI']) return;
+  const nyi = ST['NYI'];
+  const nyiGp = nyi.wins+nyi.losses+nyi.otl, nyiGl = 82-nyiGp;
+  const nyiProj = projPts('NYI');
+  const wcp = wcPool(), met = sortedDiv('MET');
+
+  function threshold(pos) {
+    let thresh = null;
+    if (pos==='WC2' && wcp[2]) thresh = wcp[2];
+    else if (pos==='WC1' && wcp[1]) thresh = wcp[1];
+    else if (pos==='METRO3' && met[3]) thresh = met[3];
+    else if (pos==='METRO2' && met[2]) thresh = met[2];
+    return thresh;
+  }
+  function needed(pos) {
+    const t = threshold(pos); if (!t) return null;
+    return projPts(t) + 1;
+  }
+  function popup(pos) {
+    const t = threshold(pos); if (!t) return '';
+    const s = ST[t]; if (!s) return '';
+    const gp = s.wins+s.losses+s.otl, gl = 82-gp;
+    const proj = projPts(t);
+    const need = proj+1;
+    const diff = need - nyi.pts;
+    const ppg = nyiGl ? (diff/nyiGl).toFixed(2) : 0;
+    const curPpg = nyiGp ? (nyi.pts/nyiGp).toFixed(2) : 0;
+    return [
+      `Threshold set by ${t}: ${s.pts}pts in ${gp}GP, pace projects ${proj}pts`,
+      `Cutoff = ${t}'s pace (${proj}) + 1 = ~${need}pts`,
+      diff > 0 ? `NYI needs ${diff} more in ${nyiGl} GP (${ppg}pts/game required vs ${curPpg} current pace)`
+               : `NYI already on pace — ${Math.abs(diff)}pts above threshold`
+    ].join(' · ');
+  }
+
+  let html = `<div class="cc cc-pace">
+    <div class="cc-lbl">NYI Projected</div>
+    <div class="cc-val" style="color:var(--org)">${nyiProj} pts</div>
+    <span class="cc-badge bdg-pace">${nyi.pts}pts · ${nyiGp}GP · ${nyiGl} left</span>
+  </div>`;
+
+  [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl]) => {
+    const need = needed(pos); if (!need) return;
+    const diff = need - nyi.pts;
+    const badge = diff <= 0
+      ? `<span class="cc-badge bdg-good">On pace ✓</span>`
+      : `<span class="cc-badge bdg-need">${diff} more pts</span>`;
+    const pop = popup(pos);
+    html += `<div class="cc" data-clinch="${pop.replace(/"/g,'&quot;')}" style="cursor:pointer">
+      <div class="cc-lbl">${lbl} <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
+      <div class="cc-val">~${need} pts</div>${badge}</div>`;
+  });
+
+  row.innerHTML = html;
+
+  // Attach clinch click
+  row.querySelectorAll('[data-clinch]').forEach(card => {
+    card.addEventListener('click', function() {
+      const reason = this.getAttribute('data-clinch');
+      if (!reason) return;
+      const tip = document.getElementById('clinch-tooltip');
+      const ov  = document.getElementById('clinch-overlay');
+      const parts = reason.split(' · ');
+      tip.innerHTML = parts.map((p,i)=>i===0?`<strong>${p}</strong>`:`<div style="margin-top:3px">${p}</div>`).join('');
+      const rect = this.getBoundingClientRect();
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth-290));
+      let top = rect.bottom+8;
+      if (top+140>window.innerHeight) top = Math.max(8,rect.top-140);
+      tip.style.left=left+'px'; tip.style.top=top+'px'; tip.style.display='block';
+      ov.classList.add('show');
+    });
+  });
+}
+
+function closeClinch() {
+  document.getElementById('clinch-tooltip').style.display='none';
+  document.getElementById('clinch-overlay').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// OBSERVATIONS (rule-based, instant)
+// ═══════════════════════════════════════════════════════════════════
+function renderObservations() {
+  const nyi = ST['NYI']; if (!nyi) return;
+  const nyiGp = nyi.wins+nyi.losses+nyi.otl, nyiGl = 82-nyiGp;
+  const nyiSos = sos('NYI'), nyiRank = sosRank('NYI');
+  const nyiProj = projPts('NYI');
+  const met = sortedDiv('MET'), wcp = wcPool();
+  const metRank = met.indexOf('NYI')+1;
+  const nyiRem = remaining('NYI');
+  const h2h = nyiRem.filter(g=>RACE_GROUP.has(g[1]));
+
+  // Metro obs
+  const metObs = [
+    {lbl:'📍 Where They Stand', txt:`NYI sits at <strong>Metro #${metRank}</strong> with <strong>${nyi.pts}pts</strong> in ${nyiGp}GP (${nyiGl} left). Projecting <strong>${nyiProj}pts</strong> at current pace.`},
+    {lbl:'📊 Schedule Difficulty', txt:`NYI has the <strong>#${nyiRank} hardest remaining schedule</strong> in the league (SOS ${nyiSos.toFixed(3)}). ${nyiRank<=5?'A significant challenge down the stretch.':nyiRank<=10?'Tougher than most rivals.':'On par with league average.'}`},
+    {lbl:'⚔️ Head-to-Head Games', txt:`<strong>${h2h.length} of ${nyiGl} remaining games (${Math.round(h2h.length/nyiGl*100)}%)</strong> are direct H2H vs rivals: ${h2h.map(g=>(g[2]==='H'?'vs':'@')+g[1]).join(', ')}. Each is a potential 4-pt swing.`}
+  ];
+
+  document.getElementById('metro-obs-cards').innerHTML = metObs.map(o=>
+    `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
+  ).join('');
+
+  // WC obs
+  const wcPos = wcp.indexOf('NYI');
+  const wcLbl = wcPos===0?'WC1':wcPos===1?'WC2':'out of WC';
+  const wc2Gap = wcp[1] ? nyi.pts - ST[wcp[1]].pts : 0;
+
+  const wcObs = [
+    {lbl:'📍 Wild Card Position', txt:`NYI sits <strong>${wcPos<0?'in a division spot, above the WC bubble':'at '+wcLbl}</strong>. ${wcp[1]?`WC2 (${wcp[1]}) is ${Math.abs(wc2Gap)}pts ${wc2Gap>=0?'behind':'ahead of'} NYI.`:''}`},
+    {lbl:'📊 Schedule vs Rivals', txt:`Compared to WC rivals, NYI has the <strong>#${nyiRank} hardest schedule</strong> remaining. ${nyiRank<=8?'Most rivals have easier paths to pts.':'Similar difficulty to the rest of the field.'}`}
+  ];
+
+  document.getElementById('wc-obs-cards').innerHTML = wcObs.map(o=>
+    `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FIELD INSIGHTS (rule-based per rival)
+// ═══════════════════════════════════════════════════════════════════
+function renderField() {
+  const grid = document.getElementById('field-grid');
+  if (!grid) return;
+  const rivals = [...RACE_GROUP].filter(t => t!=='NYI');
+  const html = rivals.map(t => {
+    const s = ST[t]; if (!s) return '';
+    const gp = s.wins+s.losses+s.otl, gl = 82-gp;
+    const proj = projPts(t), rank = sosRank(t);
+    const col = TEAM_COLORS[t]||'#fff';
+    const pos = getPos(t);
+    const nyi = ST['NYI'];
+    const gap = nyi ? nyi.pts - s.pts : 0;
+
+    let rankDesc = rank<=5 ? `the <strong>#${rank} hardest schedule in the league</strong>` :
+                   rank<=10 ? `a <strong>tough schedule (#${rank} of 32)</strong>` :
+                   rank<=22 ? `a <strong>middle-of-the-road schedule (#${rank} of 32)</strong>` :
+                               `a <strong>favorable schedule (#${rank} of 32)</strong>`;
+
+    const h2hVsNyi = remaining('NYI').filter(g=>g[1]===t).length;
+    let body = `${gap<0?`${Math.abs(gap)}pts ahead of NYI`:`${gap}pts behind NYI`}, projects <strong>${proj}pts</strong>. Faces ${rankDesc}.`;
+    if (h2hVsNyi) body += ` <strong>${h2hVsNyi} H2H game${h2hVsNyi>1?'s':''} vs NYI remaining.</strong>`;
+
+    return `<div class="fc">
+      <div class="fc-hd">
+        <span style="color:${col};font-weight:900;font-family:'Barlow Condensed',sans-serif;font-size:.95rem">${t}</span>
+        <span class="pos-badge ${pos.cls}" style="font-size:.62rem">${pos.lbl}</span>
+        <span class="fc-pts">SOS #${rank} of 32</span>
+      </div>
+      <p class="fc-body">${body}</p>
+    </div>`;
+  }).join('');
+  grid.innerHTML = html || '<div class="ins-loading">No data</div>';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AI INSIGHTS (via Anthropic API)
+// ═══════════════════════════════════════════════════════════════════
+function fetchAIInsights() {
+  // Rule-based deep insights (no API call)
+  const nyi = ST['NYI']; if (!nyi) return;
+  const nyiGp = nyi.wins+nyi.losses+nyi.otl, nyiGl = 82-nyiGp;
+  const nyiPp = ptsPct('NYI'), nyiSos = sos('NYI'), nyiRank = sosRank('NYI');
+  const nyiProj = projPts('NYI');
+  const met = sortedDiv('MET'), wcp = wcPool();
+  const nyiRem = remaining('NYI');
+  const h2h = nyiRem.filter(g => RACE_GROUP.has(g[1]));
+
+  // ── Metro deep insights ──────────────────────────────────────────
+  const pit = ST['PIT'], car = ST[met[0]];
+  const pitGl = pit ? 82-(pit.wins+pit.losses+pit.otl) : 0;
+  const pitMax = pit ? pit.pts + pitGl*2 : 0;
+  const gapOverPit = pit ? nyi.pts - pit.pts : 0;
+  const h2hVsPit = h2h.filter(g=>g[1]==='PIT').length;
+  const nyiMax = nyi.pts + nyiGl*2;
+  const carPts = car ? car.pts : 0;
+  const gapToCar = carPts - nyi.pts;
+
+  const metroDeep = [];
+
+  // Metro #2 security
+  if (pit) {
+    if (pitMax < nyi.pts) {
+      metroDeep.push(`NYI has <strong>mathematically secured Metro #2</strong> — PIT cannot catch them even with a perfect run.`);
+    } else if (gapOverPit <= 2) {
+      metroDeep.push(`Metro #2 is <strong>not secure</strong> — PIT is only <strong>${gapOverPit}pt${gapOverPit!==1?'s':''} back</strong> with ${pitGl} games left (max ${pitMax}pts).${h2hVsPit ? ` NYI faces PIT directly ${h2hVsPit}x — those games decide it.` : ' No H2H vs PIT remaining.'}`);
+    } else {
+      metroDeep.push(`NYI leads Metro #2 over PIT by <strong>${gapOverPit}pts</strong> (PIT max: ${pitMax}pts). A ${Math.max(1,Math.floor(gapOverPit/2))}-pt cushion is realistic to maintain.`);
+    }
+  }
+
+  // Can NYI catch Metro #1?
+  if (nyiMax > carPts) {
+    metroDeep.push(`Mathematically, NYI can still catch <strong>Metro #1 (${met[0]})</strong> — they trail by ${gapToCar}pts with a max of ${nyiMax}pts possible. Requires ${met[0]} to stumble significantly.`);
+  } else {
+    metroDeep.push(`${met[0]}'s Metro #1 is out of reach — NYI's max (${nyiMax}pts) falls short of ${met[0]}'s current ${carPts}pts. <strong>Metro #2 is the ceiling.</strong>`);
+  }
+
+  // H2H leverage
+  if (h2h.length) {
+    const pct = Math.round(h2h.length/nyiGl*100);
+    const teams = [...new Set(h2h.map(g=>g[1]))];
+    metroDeep.push(`<strong>${h2h.length} of ${nyiGl} remaining games (${pct}%)</strong> are H2H vs direct rivals (${teams.join(', ')}) — each a potential 4-pt swing. NYI controls more of their fate than raw SOS suggests.`);
+  }
+
+  // Schedule-adjusted performance
+  if (nyiPp < nyiSos) {
+    const diff = (nyiSos - nyiPp).toFixed(3);
+    metroDeep.push(`NYI's pts% (<strong>${nyiPp.toFixed(3)}</strong>) is below their SOS (<strong>${nyiSos.toFixed(3)}</strong>) by ${diff} — slightly underperforming relative to opponents faced. A concern heading into a tough close.`);
+  } else {
+    const diff = (nyiPp - nyiSos).toFixed(3);
+    metroDeep.push(`NYI's pts% (<strong>${nyiPp.toFixed(3)}</strong>) exceeds their SOS (<strong>${nyiSos.toFixed(3)}</strong>) by ${diff} — outperforming schedule difficulty, a positive sign.`);
+  }
+
+  // ── WC deep insights ─────────────────────────────────────────────
+  const rivals = [...RACE_GROUP].filter(t=>t!=='NYI'&&!sortedDiv('MET').slice(0,3).includes(t));
+  const wcDeep = [];
+
+  // Most dangerous convergence threat
+  const convergers = rivals.map(t => {
+    const s = ST[t]; if (!s) return null;
+    const gapNow = nyi.pts - s.pts;
+    const gapProj = nyiProj - projPts(t);
+    return {t, gapNow, gapProj, proj: projPts(t)};
+  }).filter(Boolean).sort((a,b)=>a.gapProj-b.gapProj);
+
+  if (convergers.length) {
+    const {t, gapNow, gapProj, proj} = convergers[0];
+    const trend = gapProj < gapNow-1 ? 'closing fast' : Math.abs(gapProj-gapNow)<=1 ? 'holding steady' : 'widening';
+    wcDeep.push(`<strong>${t} is the most dangerous convergence threat</strong> — currently ${gapNow}pts back, projected final gap narrows to ${Math.max(0,gapProj)}pts. Gap is ${trend}. At current pace, ${t} finishes at ${proj}pts.`);
+  }
+
+  // Pace vs SOS mismatches
+  const mismatches = rivals.filter(t => {
+    const rank = sosRank(t), proj = projPts(t);
+    return (rank <= 8 && proj >= nyi.pts) || (rank >= 22 && proj >= nyiProj - 2);
+  });
+  mismatches.slice(0,2).forEach(t => {
+    const rank = sosRank(t), proj = projPts(t);
+    const pp = ptsPct(t).toFixed(3);
+    if (rank <= 8) {
+      wcDeep.push(`<strong>${t}'s ${proj}pt projection is the hardest to sustain</strong> — they face the #${rank} hardest remaining schedule. Their pts% (${pp}) will likely compress under that pressure.`);
+    } else {
+      wcDeep.push(`<strong>${t}'s ${proj}pt projection may be inflated</strong> — they have the #${rank} easiest schedule remaining, meaning their pace reflects softer competition.`);
+    }
+  });
+
+  // Mathematical elimination
+  const dead = rivals.filter(t => {
+    const s = ST[t]; if (!s) return false;
+    return s.pts + (82-(s.wins+s.losses+s.otl))*2 < nyi.pts;
+  });
+  if (dead.length) {
+    wcDeep.push(`<strong>Effectively eliminated from catching NYI:</strong> ${dead.join(', ')} — their maximum possible points fall short of NYI's current total.`);
+  } else {
+    wcDeep.push(`No rival is mathematically eliminated yet — <strong>every team in the race group can still catch NYI</strong>. Every game matters.`);
+  }
+
+  // Pts/game required
+  const wc2 = wcp[2];
+  if (wc2 && nyiGl) {
+    const need = projPts(wc2)+1;
+    const diff = need - nyi.pts;
+    const ppg = (diff/nyiGl).toFixed(2);
+    const curPpg = (nyi.pts/(nyi.wins+nyi.losses+nyi.otl)).toFixed(2);
+    if (diff > 0) {
+      wcDeep.push(`To clinch WC2 (~${need}pts), NYI needs <strong>${ppg}pts/game</strong> over ${nyiGl} remaining games. Current pace: ${curPpg}pts/game — ${parseFloat(curPpg)>=parseFloat(ppg)?'<strong>on track</strong>.':'<strong>below the required rate</strong>.'}`);
+    }
+  }
+
+  // Render
+  function renderCards(cards, containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = cards.map(ins =>
+      `<div class="ins-card ins-deep"><p class="ins-txt">${ins}</p></div>`
+    ).join('') || '<div class="ins-loading">No insights available</div>';
+  }
+
+  renderCards(metroDeep, 'metro-deep-cards');
+  renderCards(wcDeep, 'wc-deep-cards');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// SCORES
+// ═══════════════════════════════════════════════════════════════════
+let _scoreTimer = null;
+
+function _gameLabel(g) {
+  const s = g.gameState;
+  if (s==='FUT'||s==='PRE') {
+    try { return new Date(g.startTimeUTC).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'}); }
+    catch(e) { return 'Upcoming'; }
+  }
+  if (s==='FINAL'||s==='OFF') return 'FINAL';
+  if (s==='LIVE'||s==='CRIT') {
+    const pd = g.periodDescriptor||{};
+    const pt = pd.periodType||'';
+    if (pt==='OT') return 'OT'; if (pt==='SO') return 'SO';
+    const pn = pd.number||'';
+    const ord = ['','1st','2nd','3rd'][pn]||pn+'th';
+    const rem = (g.clock&&g.clock.timeRemaining)||'';
+    if (g.clock&&g.clock.inIntermission) return ord+' INT';
+    return ord+(rem?' '+rem:'');
+  }
+  return s||'';
+}
+
+function _buildCard(away, home, aScore, hScore, state, label) {
+  const isNYI=away==='NYI'||home==='NYI';
+  const isFin=state==='FINAL'||state==='OFF';
+  const isLive=state==='LIVE'||state==='CRIT';
+  const isPre=state==='FUT'||state==='PRE';
+  const key=away+'@'+home;
+  const root=rootingInterest(away,home);
+  const reason=(RACE_GROUP.has(away)&&RACE_GROUP.has(home)&&root)
+    ? (() => { const rival=root===home?away:home; return `Root ${root} — hurts ${rival}: ${threatReason(rival)}`; })()
+    : null;
+
+  let scoreHtml;
+  if (isPre) scoreHtml=`<span class="sc-time">${label}</span>`;
+  else {
+    const wa=aScore>hScore, wh=hScore>aScore;
+    scoreHtml=`<span class="sc-n ${isFin&&wa?'sc-w':''}">${aScore}</span><span class="sc-dash">–</span><span class="sc-n ${isFin&&wh?'sc-w':''}">${hScore}</span>`;
+  }
+  const badgeHtml=isLive?`<span class="sc-badge bdg-live">● ${label}</span>`:isFin?`<span class="sc-badge bdg-fin">FINAL</span>`:'';
+
+  let dotHtml='';
+  if (root&&!isNYI) {
+    let dc,lc;
+    if (isFin) { const won=(root===away&&aScore>hScore)||(root===home&&hScore>aScore); dc=won?'sc-dot-good':'sc-dot-bad'; lc=won?'#4ade80':'#f87171'; }
+    else { dc='sc-dot-pre'; lc='#94a3b8'; }
+    const tap=reason?' <span class="sc-tap-ind">ⓘ</span>':'';
+    dotHtml=`<span class="sc-root-wrap"><span class="sc-dot ${dc}"></span><span class="sc-root-lbl" style="color:${lc}">Root: ${root}${tap}</span></span>`;
+  }
+
+  const dr=reason?`data-reason="${reason.replace(/"/g,'&quot;')}"`:'';
+  const border=isNYI?'var(--org)':'rgba(255,255,255,.15)';
+  return `<div class="sc-card ${isNYI?'sc-nyi':''}" ${dr} style="border-left:3px solid ${border}">${dotHtml}<span class="sc-match"><span class="sc-tm">${away}</span><span class="sc-at">@</span><span class="sc-tm">${home}</span></span><span class="sc-nums">${scoreHtml}</span>${badgeHtml}</div>`;
+}
+
+function _renderScores(games) {
+  const filtered = games.filter(g => RACE_GROUP.has(g.awayTeam.abbrev)||RACE_GROUP.has(g.homeTeam.abbrev));
+  filtered.sort((a,b) => {
+    const aN=a.awayTeam.abbrev==='NYI'||a.homeTeam.abbrev==='NYI'?0:1;
+    const bN=b.awayTeam.abbrev==='NYI'||b.homeTeam.abbrev==='NYI'?0:1;
+    return aN-bN;
+  });
+  const row=document.getElementById('sc-row');
+  const ts=document.getElementById('sc-ts');
+  if (!row) return;
+  if (!filtered.length) { row.innerHTML='<span class="sc-none">No race group games today</span>'; if(ts)ts.textContent=''; return; }
+  row.innerHTML=filtered.map(g=>_buildCard(g.awayTeam.abbrev,g.homeTeam.abbrev,g.awayTeam.score||0,g.homeTeam.score||0,g.gameState,_gameLabel(g))).join('');
+  if (ts) ts.textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+  _attachTip();
+}
+
+async function _fetchScores() {
+  try {
+    const r=fetch('/api/scores');
+    if(!r.ok) throw new Error(r.status);
+    const d=await r.json();
+    _renderScores(d.games||[]);
+  } catch(e) {
+    console.warn('Scores:', e.message);
+    const ts=document.getElementById('sc-ts');
+    if(ts) ts.textContent='Scores unavailable — refresh to retry';
+  }
+}
+
+function _attachTip() {
+  const tip=document.getElementById('sc-tooltip');
+  const ov=document.getElementById('sc-overlay');
+  const row=document.getElementById('sc-row');
+  if(!tip||!ov||!row) return;
+  const nr=row.cloneNode(true); row.parentNode.replaceChild(nr,row);
+  nr.addEventListener('click',function(e){
+    const card=e.target.closest('[data-reason]');
+    if(!card){_closeTip();return;}
+    e.stopPropagation();
+    const reason=card.getAttribute('data-reason');
+    const sep=reason.indexOf(': ',reason.indexOf('hurts'));
+    const h=sep>-1?reason.slice(0,sep):reason;
+    const d=sep>-1?reason.slice(sep+2):'';
+    tip.innerHTML='<strong>'+h+'</strong>'+(d?'<div class="tt-sub">'+d+'</div>':'');
+    const rc=card.getBoundingClientRect();
+    const left=Math.max(8,Math.min(rc.left,window.innerWidth-268));
+    let top=rc.bottom+8;
+    if(top+130>window.innerHeight) top=Math.max(8,rc.top-130);
+    tip.style.left=left+'px'; tip.style.top=top+'px'; tip.style.display='block';
+    ov.classList.add('show');
+  });
+}
+function _closeTip(){
+  const t=document.getElementById('sc-tooltip'),o=document.getElementById('sc-overlay');
+  if(t)t.style.display='none'; if(o)o.classList.remove('show');
+}
+document.getElementById('sc-overlay').addEventListener('click',_closeTip);
+
+// ═══════════════════════════════════════════════════════════════════
+// UI TOGGLES
+// ═══════════════════════════════════════════════════════════════════
+function toggleSection(bodyId, chevId) {
+  const body=document.getElementById(bodyId), chev=document.getElementById(chevId);
+  if(!body) return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'';
+  if(chev) chev.textContent=open?'▼ Expand':'▲ Collapse';
+}
+function toggleInsGroup(bodyId, chevId) {
+  const body=document.getElementById(bodyId), chev=document.getElementById(chevId);
+  if(!body) return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'';
+  if(chev) chev.textContent=open?'▶':'▼';
+}
+function toggleTier(bodyId, chevId) {
+  const body=document.getElementById(bodyId), chev=document.getElementById(chevId);
+  if(!body) return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'';
+  if(chev) chev.textContent=open?'▶':'▼';
+}
+let allExpanded=false;
+function toggleAll() {
+  allExpanded=!allExpanded;
+  document.querySelectorAll('.tr-chips').forEach(r=>r.style.display=allExpanded?'table-row':'none');
+  document.querySelectorAll('.toggle-btn').forEach(b=>b.textContent=allExpanded?'▼ Hide remaining games':'▶ Show remaining games');
+  const btn=document.getElementById('expand-all-btn');
+  if(btn) btn.textContent=allExpanded?'▲ Collapse All Schedules':'▶ Expand All Schedules';
+}
+function toggleSched(id, btn) {
+  const row=document.getElementById(id);
+  const open=row.style.display!=='none';
+  row.style.display=open?'none':'table-row';
+  btn.textContent=open?'▶ Show remaining games':'▼ Hide remaining games';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN LOAD
+// ═══════════════════════════════════════════════════════════════════
+async function loadAll() {
+  const ok = await fetchStandings();
+  if (!ok) return;
+  renderEast();
+  renderRace();
+  renderClinch();
+  renderObservations();
+  renderField();
+  _fetchScores();
+  fetchAIInsights(); // async, doesn't block
+  if (_scoreTimer) clearInterval(_scoreTimer);
+  _scoreTimer = setInterval(_fetchScores, 60000);
+}
+
+loadAll();
+</script>
+</body>
+</html>
