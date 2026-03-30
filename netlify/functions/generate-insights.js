@@ -55,11 +55,22 @@ const RACE_GROUP = new Set(['BOS','CBJ','DET','NYI','OTT','PHI','PIT']);
 // ── Main handler ──────────────────────────────────────────────────
 exports.handler = async (event, context) => {
   console.log('generate-insights: starting', new Date().toISOString());
-  // Netlify Blobs needs siteID — get from context or environment
-  const siteID = (context && context.site && context.site.id) || process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
-  const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.TOKEN;
-  const storeOpts = siteID ? { name: 'insights-cache', siteID, token } : 'insights-cache';
-  const store = getStore(storeOpts);
+  
+  // Build store — try multiple ways to get siteID
+  const siteID = process.env.NETLIFY_SITE_ID
+    || process.env.SITE_ID
+    || (context && context.site && context.site.id);
+  const token = process.env.NETLIFY_AUTH_TOKEN
+    || process.env.NETLIFY_BLOBS_TOKEN
+    || process.env.TOKEN;
+
+  console.log('generate-insights: siteID present:', !!siteID, '| token present:', !!token);
+
+  if (!siteID) {
+    return { statusCode: 500, body: JSON.stringify({ error: 'NETLIFY_SITE_ID env var not set' }) };
+  }
+
+  const store = getStore({ name: 'insights-cache', siteID, token });
 
   try {
     // 1. Fetch today's scores
