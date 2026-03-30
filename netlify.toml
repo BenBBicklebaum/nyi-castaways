@@ -1,17 +1,26 @@
 [[redirects]]
   from = "/api/standings"
-  to = "/.netlify/functions/nhl/standings"
+  to = "/.netlify/functions/nhl?type=standings"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/scores"
-  to = "/.netlify/functions/nhl/scores"
+  to = "/.netlify/functions/nhl?type=scores"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/insights"
-  to = "/.netlify/functions/nhl/insights"
+  to = "/.netlify/functions/nhl?type=insights"
   status = 200
+  force = true
+
+[functions]
+  directory = "netlify/functions"
+
+[functions."generate-insights"]
+  schedule = "0 * * * *"
 
 [build]
   publish = "."

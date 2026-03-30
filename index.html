@@ -23,14 +23,13 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .hdr h1 span{color:var(--org)}
 .hdr-sub{font-size:.72rem;color:rgba(255,255,255,.65);margin-top:2px}
 .hdr-date{font-size:.78rem;font-weight:700;color:#fff;margin-top:4px}
-.ref-btn{margin-top:8px;padding:5px 14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:20px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:.06em}
-.ref-btn:hover{background:rgba(255,255,255,.25)}
 #status-bar{font-size:.62rem;color:rgba(255,255,255,.45);margin-top:4px;min-height:14px}
 
 /* SCORES */
 .scores-bar{background:#0a0f1e;padding:6px 16px 7px;border-bottom:2px solid var(--org)}
 .sc-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.12em;color:var(--org);text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
 .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.sc-row .sc-nyi-wrap{grid-column:1/-1}
 .sc-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:5px;min-width:0}
 .sc-matchup{display:flex;align-items:center;gap:4px;flex:1;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:700}
 .sc-side{display:inline-flex;align-items:center;gap:3px}
@@ -38,7 +37,9 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .sc-sep{color:#1e293b;font-size:.65rem;padding:0 2px}
 .sc-winner .sc-tm{color:#f1f5f9!important}
 .sc-winner .sc-score{color:#fff!important;font-size:1rem!important}
-.sc-nyi{border-color:var(--org)!important;background:rgba(244,125,48,.1)!important}
+.sc-nyi{border-color:var(--org)!important;background:rgba(244,125,48,.12)!important;padding:5px 10px!important}
+.sc-nyi .sc-score{font-size:1.15rem!important}
+.sc-nyi .sc-tm{font-size:.88rem!important;color:#f1f5f9!important}
 .sc-live{border-color:#22c55e!important}
 .sc-match{font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:700;color:#cbd5e1;display:flex;gap:3px;align-items:center}
 .sc-tm{font-size:.78rem;font-weight:900;color:#64748b}
@@ -142,6 +143,10 @@ th.row-col{color:#86efac}
 .ins-stack{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
 .ins-card{background:var(--srf);border:1px solid var(--bdr);border-radius:8px;padding:11px 13px;border-left:4px solid var(--nyi)}
 .ins-deep{border-left-color:#7c3aed!important;background:linear-gradient(to right,#1a1033,var(--srf) 40%)!important}
+.butchie-card{border-left-color:#F47D30!important;background:linear-gradient(to right,rgba(244,125,48,.08),var(--srf) 40%)!important}
+.butchie-hd{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.butchie-avatar{font-size:1.1rem;line-height:1}
+.butchie-name{font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:900;color:var(--org);letter-spacing:.06em;text-transform:uppercase}
 .ins-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
 .ins-txt{font-size:.8rem;line-height:1.55;color:var(--txt)}
 .ins-loading{color:var(--muted);font-size:.78rem;font-style:italic;padding:10px 0}
@@ -165,12 +170,16 @@ details[open] summary{border-radius:8px 8px 0 0}
 .tb-edge{color:#4ade80;font-size:.6rem;font-weight:700}
 .tb-behind{color:#f87171;font-size:.6rem;font-weight:700}
 
-@media(max-width:600px){
+.diff-col{font-weight:700}
+.stk-col{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:.82rem}
+.hide-mobile{display:table-cell}
+@media(max-width:640px){
+  .hide-mobile{display:none!important}
   .main{padding:10px}
-  th,td{padding:5px 5px;font-size:.7rem}
+  th,td{padding:5px 4px;font-size:.69rem}
   .fc-grid{grid-template-columns:1fr}
   .cc-row{grid-template-columns:1fr 1fr}
-  table{min-width:480px}
+  table{min-width:380px}
 }
 @media(min-width:600px) and (max-width:1023px){
   .main{padding:14px 16px}
@@ -185,7 +194,7 @@ details[open] summary{border-radius:8px 8px 0 0}
          class="hdr-logo" alt="NYI" onerror="this.style.display='none'">
     <div class="hdr-text">
       <h1>NYI Castaways <span>Playoff Race Hub</span></h1>
-      <div class="hdr-sub">Eastern Conference Playoff Race Hub · Powered by H007</div>
+      <div class="hdr-sub">Eastern Conference Playoff Race Hub · Powered by H007 Analytics</div>
     </div>
   </div>
   <div class="hdr-date" id="standings-date">Loading standings...</div>
@@ -255,13 +264,17 @@ details[open] summary{border-radius:8px 8px 0 0}
               <thead><tr>
                 <th>Team</th><th>Pos</th>
                 <th class="num">GP</th><th class="num">PTS</th>
-                <th class="num">W</th><th class="num muted">L</th>
-                <th class="num muted">OTL</th>
-                <th class="num rw-col" title="Regulation Wins">RW</th>
-                <th class="num row-col" title="Regulation+OT Wins">ROW</th>
+                <th class="num">W</th>
+                <th class="num hide-mobile muted">L</th>
+                <th class="num hide-mobile muted">OTL</th>
+                <th class="num rw-col" title="Regulation Wins — 1st tiebreaker">RW</th>
+                <th class="num row-col" title="Reg+OT Wins — 2nd tiebreaker">ROW</th>
                 <th class="num muted">LEFT</th>
-                <th class="num muted">ADJ SOS</th>
-                <th class="num muted">SOS#</th>
+                <th class="num muted" title="Raw SOS Rank (1=hardest)">SOS#</th>
+                <th class="num muted" title="Adjusted SOS Rank (1=hardest)">ADJ#</th>
+                <th class="num diff-col" title="Goal differential">DIFF</th>
+                <th class="num hide-mobile" title="Last 10 games">L10</th>
+                <th class="num stk-col" title="Current streak">STK</th>
                 <th class="num proj-col">PROJ</th>
               </tr></thead>
               <tbody id="race-tbody"><tr><td colspan="13" class="ins-loading">Loading...</td></tr></tbody>
@@ -279,6 +292,7 @@ details[open] summary{border-radius:8px 8px 0 0}
     <div class="sec-lbl">Clinch Tracker <span style="font-size:.55rem;opacity:.6">· tap for logic</span></div>
     <div class="cc-row" id="cc-row"><div class="ins-loading">Loading...</div></div>
 
+    <div id="magic-numbers" style="margin-bottom:12px;padding:8px 12px;background:var(--srf);border:1px solid var(--bdr);border-radius:8px;font-size:.78rem;line-height:1.9;color:var(--txt)"></div>
     <div class="sec-lbl">Islanders Breakdown</div>
 
     <div class="ins-group-hd" onclick="toggleInsGroup('metro-ins','metro-chev')">
@@ -293,10 +307,11 @@ details[open] summary{border-radius:8px 8px 0 0}
         <div id="metro-obs-cards" class="ins-loading">Loading...</div>
       </div>
       <div class="ins-tier-hd" onclick="toggleTier('metro-deep-body','metro-deep-chev')">
-        <span>Deep Insights</span><span class="tier-chev" id="metro-deep-chev">▶</span>
+        <span>🏒 Butchie's AI-nalysis</span><span class="tier-chev" id="metro-deep-chev">▶</span>
       </div>
       <div id="metro-deep-body" class="ins-stack" style="display:none">
-        <div id="metro-deep-cards" class="ins-loading">Loading...</div>
+        <div id="butchie-cards" class="ins-loading">Loading Butchie's take...</div>
+        <div id="butchie-meta" style="font-size:.62rem;color:var(--muted);margin-top:4px;padding:0 2px"></div>
       </div>
     </div>
 
@@ -311,12 +326,7 @@ details[open] summary{border-radius:8px 8px 0 0}
       <div id="wc-obs-body" class="ins-stack" style="display:none">
         <div id="wc-obs-cards" class="ins-loading">Loading...</div>
       </div>
-      <div class="ins-tier-hd" onclick="toggleTier('wc-deep-body','wc-deep-chev')">
-        <span>Deep Insights</span><span class="tier-chev" id="wc-deep-chev">▶</span>
-      </div>
-      <div id="wc-deep-body" class="ins-stack" style="display:none">
-        <div id="wc-deep-cards" class="ins-loading">Loading...</div>
-      </div>
+
     </div>
 
     <div class="sec-lbl" style="margin-top:20px">The Rest of the Field</div>
@@ -325,11 +335,39 @@ details[open] summary{border-radius:8px 8px 0 0}
     <details style="margin-bottom:16px">
       <summary>Methodology</summary>
       <div class="meth-body">
-        <p><strong>Tiebreakers</strong> — Applied in order: (1) Points%, (2) RW — Regulation Wins, (3) ROW — Regulation+OT Wins, (4) Total Wins, (5) H2H points, (6) Goal differential, (7) Goals for. RW and ROW columns are highlighted in the tables.</p>
-        <p style="margin-top:8px"><strong>Adjusted SOS</strong> — Raw SOS is avg pts% of remaining opponents. Adjusted SOS applies a haircut (cap to 0.500) for opponents who are mathematically locked into their seed when NYI faces them in the opponent's final 2 games — a locked team may rest starters.</p>
-        <p style="margin-top:8px"><strong>Projected Points</strong> — Current pts ÷ GP × 82, rounded to nearest integer.</p>
-        <p style="margin-top:8px"><strong>Clinch Thresholds</strong> — Based on pace projections of the first team outside each cutline.</p>
-        <p style="margin-top:8px"><strong>Rooting Interest</strong> — Multi-factor threat score: pts gap, projected pts, adjusted SOS rank, games remaining, H2H vs NYI, WC position proximity.</p>
+
+        <p><strong>Projected Points</strong> — Not a simple pace calculation. Three factors are blended:</p>
+        <ul style="margin:4px 0 8px 16px;line-height:1.8;font-size:.75rem">
+          <li><strong>Base pace</strong> — current pts ÷ GP, projected over remaining games</li>
+          <li><strong>Adjusted SOS regression</strong> — if a team's remaining schedule is harder than what they've faced so far, their pace is expected to regress downward (30% weight). Easier remaining schedule, pace holds. Uses adjusted SOS, not raw.</li>
+          <li><strong>H2H penalty</strong> — head-to-head games against direct rivals are tighter by nature. A small drag (~0.012 pts/game per H2H remaining) is applied.</li>
+        </ul>
+
+        <p><strong>Schedule of Record (SOS# and ADJ#)</strong> — Both columns rank all 32 teams by remaining schedule difficulty (1 = hardest, 32 = easiest), based on opponents' current points percentage.</p>
+        <ul style="margin:4px 0 8px 16px;line-height:1.8;font-size:.75rem">
+          <li><strong>SOS#</strong> — Raw rank: straight average of remaining opponents' pts%</li>
+          <li><strong>ADJ#</strong> — Adjusted rank: applies a haircut (floor of 0.500 = coin flip) to any opponent who is mathematically locked into their conference seed AND appears in your schedule during their final 2 games. A locked team may rest starters, inflating the apparent difficulty. ★ flags when a haircut was applied.</li>
+        </ul>
+
+        <p><strong>Tiebreakers</strong> — When teams finish tied on points, the NHL applies these in order:</p>
+        <ol style="margin:4px 0 8px 16px;line-height:1.8;font-size:.75rem">
+          <li><strong>Points %</strong> — if teams played unequal games, higher pts% wins</li>
+          <li><strong>RW</strong> — Regulation Wins (no OT, no shootout) — the key tiebreaker, shown in <span style="color:#a78bfa;font-weight:700">purple</span></li>
+          <li><strong>ROW</strong> — Regulation + OT Wins (excludes shootout wins) — shown in <span style="color:#86efac;font-weight:700">green</span></li>
+          <li><strong>W</strong> — Total wins (all methods)</li>
+          <li><strong>H2H</strong> — Points earned in games between only the tied teams</li>
+          <li><strong>DIFF</strong> — Season-long goal differential</li>
+          <li><strong>GF</strong> — Season-long goals for</li>
+        </ol>
+        <p style="font-size:.75rem">▲TB / ▼TB in the race table indicates who currently holds the tiebreaker edge when two teams are within 1pt. The clinch tracker flags tiebreaker scenarios when projections land tied teams at the same cutline.</p>
+
+        <p style="margin-top:8px"><strong>Clinch Thresholds</strong> — Each clinch card shows the projected pts of the first team currently outside that cutline + 1. Tapping reveals the threshold team's current pace, and how many pts/game NYI needs to exceed it. When NYI and the threshold team project to the same total, the tiebreaker resolution is shown.</p>
+
+        <p style="margin-top:8px"><strong>Rooting Interest</strong> — A composite threat score determines who NYI fans should root against. Factors: pts gap to NYI (highest weight), projected final pts, adjusted SOS rank, games remaining, H2H games vs NYI still to play, current WC position proximity. For head-to-head rival games (both teams in the race), tapping a score card shows the full breakdown including tiebreaker context.</p>
+
+        <p style="margin-top:8px"><strong>Observations</strong> — Rule-based, recalculated from live standings on every page load. Covers position, schedule difficulty, H2H leverage, and pace.</p>
+        <p style="margin-top:8px"><strong>Butchie's AI-nalysis</strong> — Powered by GPT-4o-mini. After each race group game completes, a scheduled process fetches live standings, computes all analytics context (pts, RW, ROW, adjusted SOS, projections, tiebreakers, L10 trends, streaks, H2H remaining), and sends it to the AI to generate 3-4 sharp analyst-style insights. The goal: surface non-obvious findings that require synthesizing multiple data points simultaneously — the kind of thing a beat writer would say if they had a supercomputer. Insights refresh automatically after each game. <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em></p>
+
       </div>
     </details>
 
@@ -350,7 +388,7 @@ details[open] summary{border-radius:8px 8px 0 0}
 const FULL_SCHEDULE = {"BOS": [["Mar 29", "CBJ", "A"], ["Mar 31", "DAL", "H"], ["Apr 2", "FLA", "A"], ["Apr 4", "TBL", "A"], ["Apr 5", "PHI", "A"], ["Apr 7", "CAR", "A"], ["Apr 11", "TBL", "H"], ["Apr 12", "CBJ", "A"], ["Apr 14", "NJD", "H"]], "BUF": [["Mar 31", "NYI", "H"], ["Apr 2", "OTT", "A"], ["Apr 4", "WSH", "A"], ["Apr 6", "TBL", "H"], ["Apr 8", "NYR", "A"], ["Apr 9", "CBJ", "H"], ["Apr 13", "CHI", "A"], ["Apr 15", "DAL", "H"]], "CAR": [["Mar 29", "MTL", "H"], ["Mar 31", "CBJ", "A"], ["Apr 2", "CBJ", "H"], ["Apr 4", "NYI", "H"], ["Apr 5", "OTT", "A"], ["Apr 7", "BOS", "H"], ["Apr 9", "CHI", "A"], ["Apr 11", "UTA", "A"], ["Apr 13", "PHI", "A"], ["Apr 14", "NYI", "A"]], "CBJ": [["Mar 29", "BOS", "H"], ["Mar 31", "CAR", "H"], ["Apr 2", "CAR", "A"], ["Apr 4", "WPG", "H"], ["Apr 7", "DET", "A"], ["Apr 9", "BUF", "A"], ["Apr 11", "MTL", "A"], ["Apr 12", "BOS", "H"], ["Apr 14", "WSH", "H"]], "DET": [["Mar 31", "PIT", "A"], ["Apr 2", "PHI", "A"], ["Apr 4", "NYR", "A"], ["Apr 5", "MIN", "H"], ["Apr 7", "CBJ", "H"], ["Apr 9", "PHI", "A"], ["Apr 11", "NJD", "H"], ["Apr 13", "TBL", "A"], ["Apr 15", "FLA", "A"]], "FLA": [["Mar 29", "NYR", "A"], ["Mar 31", "OTT", "H"], ["Apr 2", "BOS", "H"], ["Apr 4", "PIT", "A"], ["Apr 5", "PIT", "A"], ["Apr 7", "MTL", "A"], ["Apr 9", "OTT", "A"], ["Apr 11", "TOR", "A"], ["Apr 13", "NYR", "H"], ["Apr 15", "DET", "H"]], "MTL": [["Mar 29", "CAR", "A"], ["Mar 31", "TBL", "A"], ["Apr 2", "NYR", "A"], ["Apr 4", "NJD", "A"], ["Apr 5", "NJD", "H"], ["Apr 7", "FLA", "H"], ["Apr 9", "TBL", "H"], ["Apr 11", "CBJ", "H"], ["Apr 12", "NYI", "A"], ["Apr 14", "PHI", "A"]], "NJD": [["Mar 29", "CHI", "H"], ["Mar 31", "NYR", "A"], ["Apr 2", "WSH", "H"], ["Apr 4", "MTL", "H"], ["Apr 5", "MTL", "A"], ["Apr 7", "PHI", "H"], ["Apr 9", "PIT", "A"], ["Apr 11", "DET", "A"], ["Apr 12", "OTT", "H"], ["Apr 14", "BOS", "A"]], "NYI": [["Mar 30", "PIT", "H"], ["Mar 31", "BUF", "A"], ["Apr 3", "PHI", "H"], ["Apr 4", "CAR", "A"], ["Apr 9", "TOR", "H"], ["Apr 11", "OTT", "H"], ["Apr 12", "MTL", "H"], ["Apr 14", "CAR", "H"]], "NYR": [["Mar 29", "FLA", "H"], ["Mar 31", "NJD", "H"], ["Apr 2", "MTL", "H"], ["Apr 4", "DET", "H"], ["Apr 5", "WSH", "A"], ["Apr 8", "BUF", "H"], ["Apr 11", "DAL", "A"], ["Apr 13", "FLA", "A"], ["Apr 15", "TBL", "H"]], "OTT": [["Mar 31", "FLA", "A"], ["Apr 2", "BUF", "H"], ["Apr 4", "MIN", "H"], ["Apr 5", "CAR", "H"], ["Apr 7", "TBL", "H"], ["Apr 9", "FLA", "H"], ["Apr 11", "NYI", "A"], ["Apr 12", "NJD", "A"], ["Apr 15", "TOR", "H"]], "PHI": [["Mar 29", "DAL", "H"], ["Mar 31", "WSH", "A"], ["Apr 2", "DET", "H"], ["Apr 3", "NYI", "A"], ["Apr 5", "BOS", "H"], ["Apr 7", "NJD", "A"], ["Apr 9", "DET", "H"], ["Apr 11", "WPG", "A"], ["Apr 13", "CAR", "H"], ["Apr 14", "MTL", "H"]], "PIT": [["Mar 30", "NYI", "A"], ["Mar 31", "DET", "H"], ["Apr 2", "TBL", "A"], ["Apr 4", "FLA", "H"], ["Apr 5", "FLA", "H"], ["Apr 9", "NJD", "H"], ["Apr 11", "WSH", "H"], ["Apr 12", "WSH", "A"], ["Apr 14", "STL", "A"]], "TBL": [["Mar 29", "NSH", "H"], ["Mar 31", "MTL", "H"], ["Apr 2", "PIT", "H"], ["Apr 4", "BOS", "H"], ["Apr 6", "BUF", "A"], ["Apr 7", "OTT", "A"], ["Apr 9", "MTL", "A"], ["Apr 11", "BOS", "A"], ["Apr 13", "DET", "H"], ["Apr 15", "NYR", "A"]], "TOR": [["Mar 30", "ANA", "A"], ["Apr 2", "SJS", "A"], ["Apr 4", "LAK", "A"], ["Apr 8", "WSH", "H"], ["Apr 9", "NYI", "A"], ["Apr 11", "FLA", "H"], ["Apr 13", "DAL", "H"], ["Apr 15", "BUF", "A"]], "WSH": [["Mar 31", "PHI", "A"], ["Apr 2", "NJD", "A"], ["Apr 4", "BUF", "H"], ["Apr 5", "NYR", "H"], ["Apr 8", "TOR", "A"], ["Apr 11", "PIT", "A"], ["Apr 12", "PIT", "H"], ["Apr 14", "CBJ", "A"]], "ANA": [["Mar 30", "TOR", "H"], ["Apr 1", "SJS", "A"], ["Apr 3", "STL", "A"], ["Apr 7", "COL", "H"], ["Apr 9", "UTA", "H"], ["Apr 11", "LAK", "A"], ["Apr 13", "CGY", "A"], ["Apr 14", "CGY", "A"], ["Apr 15", "MIN", "A"]], "CGY": [["Mar 30", "COL", "A"], ["Apr 2", "VGK", "A"], ["Apr 4", "MIN", "H"], ["Apr 7", "DAL", "A"], ["Apr 9", "COL", "A"], ["Apr 11", "SEA", "A"], ["Apr 12", "UTA", "H"], ["Apr 14", "COL", "H"], ["Apr 16", "LAK", "H"]], "CHI": [["Mar 29", "NJD", "A"], ["Mar 31", "WPG", "A"], ["Apr 2", "EDM", "A"], ["Apr 4", "SEA", "A"], ["Apr 6", "SJS", "A"], ["Apr 9", "CAR", "H"], ["Apr 11", "STL", "H"], ["Apr 13", "BUF", "H"], ["Apr 15", "SJS", "H"]], "COL": [["Mar 30", "CGY", "H"], ["Apr 1", "VAN", "H"], ["Apr 4", "DAL", "A"], ["Apr 5", "STL", "H"], ["Apr 7", "STL", "A"], ["Apr 9", "CGY", "H"], ["Apr 11", "VGK", "H"], ["Apr 13", "EDM", "A"], ["Apr 14", "CGY", "A"], ["Apr 16", "SEA", "H"]], "DAL": [["Mar 29", "PHI", "A"], ["Mar 31", "BOS", "A"], ["Apr 2", "WPG", "H"], ["Apr 4", "COL", "H"], ["Apr 7", "CGY", "H"], ["Apr 9", "MIN", "H"], ["Apr 11", "NYR", "H"], ["Apr 13", "TOR", "A"], ["Apr 15", "BUF", "A"]], "EDM": [["Mar 31", "SEA", "A"], ["Apr 2", "CHI", "H"], ["Apr 4", "VGK", "H"], ["Apr 7", "UTA", "A"], ["Apr 8", "SJS", "A"], ["Apr 11", "LAK", "A"], ["Apr 13", "COL", "H"], ["Apr 16", "VAN", "H"]], "LAK": [["Apr 1", "STL", "A"], ["Apr 2", "NSH", "H"], ["Apr 4", "TOR", "H"], ["Apr 6", "NSH", "H"], ["Apr 9", "VAN", "H"], ["Apr 11", "EDM", "H"], ["Apr 13", "SEA", "A"], ["Apr 14", "VAN", "A"], ["Apr 16", "CGY", "A"]], "MIN": [["Apr 2", "VAN", "H"], ["Apr 4", "OTT", "A"], ["Apr 5", "DET", "A"], ["Apr 7", "SEA", "H"], ["Apr 9", "DAL", "A"], ["Apr 11", "NSH", "A"], ["Apr 13", "STL", "A"], ["Apr 14", "ANA", "H"]], "NSH": [["Mar 29", "TBL", "A"], ["Apr 2", "LAK", "A"], ["Apr 4", "SJS", "A"], ["Apr 6", "LAK", "A"], ["Apr 7", "ANA", "A"], ["Apr 9", "UTA", "A"], ["Apr 11", "MIN", "H"], ["Apr 13", "SJS", "H"], ["Apr 16", "ANA", "H"]], "SEA": [["Mar 31", "EDM", "A"], ["Apr 2", "UTA", "H"], ["Apr 4", "CHI", "H"], ["Apr 6", "WPG", "A"], ["Apr 7", "MIN", "A"], ["Apr 9", "VGK", "H"], ["Apr 11", "CGY", "H"], ["Apr 13", "LAK", "H"], ["Apr 15", "VGK", "A"], ["Apr 16", "COL", "A"]], "SJS": [["Mar 30", "STL", "H"], ["Apr 1", "ANA", "H"], ["Apr 2", "TOR", "H"], ["Apr 4", "NSH", "H"], ["Apr 6", "CHI", "H"], ["Apr 8", "EDM", "H"], ["Apr 9", "ANA", "A"], ["Apr 11", "VAN", "H"], ["Apr 13", "NSH", "A"], ["Apr 15", "CHI", "A"], ["Apr 16", "WPG", "A"]], "STL": [["Mar 30", "SJS", "A"], ["Apr 1", "LAK", "H"], ["Apr 3", "ANA", "H"], ["Apr 5", "COL", "A"], ["Apr 7", "COL", "H"], ["Apr 9", "WPG", "H"], ["Apr 11", "CHI", "A"], ["Apr 13", "MIN", "H"], ["Apr 14", "PIT", "H"], ["Apr 16", "UTA", "A"]], "UTA": [["Mar 29", "FLA", "H"], ["Apr 2", "SEA", "A"], ["Apr 4", "VAN", "H"], ["Apr 7", "EDM", "H"], ["Apr 9", "NSH", "H"], ["Apr 11", "CAR", "H"], ["Apr 14", "WPG", "H"], ["Apr 16", "STL", "H"]], "VGK": [["Mar 30", "VAN", "H"], ["Apr 2", "CGY", "H"], ["Apr 4", "EDM", "A"], ["Apr 7", "VAN", "A"], ["Apr 9", "SEA", "A"], ["Apr 11", "COL", "A"], ["Apr 13", "WPG", "H"], ["Apr 15", "SEA", "H"]], "VAN": [["Mar 30", "VGK", "A"], ["Apr 1", "COL", "A"], ["Apr 2", "MIN", "A"], ["Apr 4", "UTA", "H"], ["Apr 7", "VGK", "H"], ["Apr 9", "LAK", "A"], ["Apr 11", "SJS", "A"], ["Apr 12", "ANA", "A"], ["Apr 14", "LAK", "H"], ["Apr 16", "EDM", "A"]], "WPG": [["Mar 31", "CHI", "A"], ["Apr 2", "DAL", "A"], ["Apr 4", "CBJ", "A"], ["Apr 6", "SEA", "H"], ["Apr 9", "STL", "A"], ["Apr 11", "PHI", "H"], ["Apr 13", "VGK", "A"], ["Apr 14", "UTA", "A"], ["Apr 16", "SJS", "H"]]};
 const TEAM_INFO     = {"CAR": ["E", "MET"], "BUF": ["E", "ATL"], "TBL": ["E", "ATL"], "MTL": ["E", "ATL"], "BOS": ["E", "ATL"], "NYI": ["E", "MET"], "PIT": ["E", "MET"], "CBJ": ["E", "MET"], "OTT": ["E", "ATL"], "DET": ["E", "ATL"], "PHI": ["E", "MET"], "WSH": ["E", "MET"], "NJD": ["E", "MET"], "TOR": ["E", "ATL"], "FLA": ["E", "ATL"], "NYR": ["E", "MET"], "COL": ["W", "CEN"], "DAL": ["W", "CEN"], "MIN": ["W", "CEN"], "ANA": ["W", "PAC"], "EDM": ["W", "PAC"], "UTA": ["W", "CEN"], "VGK": ["W", "PAC"], "NSH": ["W", "CEN"], "LAK": ["W", "PAC"], "SEA": ["W", "PAC"], "WPG": ["W", "CEN"], "SJS": ["W", "PAC"], "STL": ["W", "CEN"], "CGY": ["W", "PAC"], "CHI": ["W", "CEN"], "VAN": ["W", "PAC"]};
 const RACE_GROUP    = new Set(["BOS", "CBJ", "DET", "NYI", "OTT", "PHI", "PIT"]);
-const TEAM_COLORS   = {"ANA": "#F47A38", "BOS": "#FFB81C", "BUF": "#003087", "CAR": "#CC0000", "CBJ": "#002654", "CGY": "#C8102E", "CHI": "#CF0A2C", "COL": "#6F263D", "DAL": "#006847", "DET": "#CE1126", "EDM": "#FF4C00", "FLA": "#C8102E", "LAK": "#A2AAAD", "MIN": "#154734", "MTL": "#AF1E2D", "NJD": "#CE1126", "NSH": "#FFB81C", "NYI": "#F47D30", "NYR": "#0038A8", "OTT": "#C52032", "PHI": "#F74902", "PIT": "#FCB514", "SEA": "#001628", "SJS": "#006D75", "STL": "#002F87", "TBL": "#002868", "TOR": "#003E7E", "UTA": "#69B3E7", "VAN": "#00205B", "VGK": "#B4975A", "WPG": "#004C97", "WSH": "#C8102E"};
+const TEAM_COLORS   = {"ANA": "#F47A38", "BOS": "#FFB81C", "BUF": "#4a90d9", "CAR": "#f87171", "CBJ": "#4a90d9", "CGY": "#f87171", "CHI": "#f87171", "COL": "#c084fc", "DAL": "#4ade80", "DET": "#f87171", "EDM": "#FF4C00", "FLA": "#f87171", "LAK": "#94a3b8", "MIN": "#4ade80", "MTL": "#f87171", "NJD": "#f87171", "NSH": "#FFB81C", "NYI": "#F47D30", "NYR": "#60a5fa", "OTT": "#f87171", "PHI": "#F74902", "PIT": "#FCB514", "SEA": "#38bdf8", "SJS": "#22d3ee", "STL": "#60a5fa", "TBL": "#60a5fa", "TOR": "#60a5fa", "UTA": "#69B3E7", "VAN": "#60a5fa", "VGK": "#B4975A", "WPG": "#60a5fa", "WSH": "#C8102E"};
 
 // ═══════════════════════════════════════════════════════════════
 // DATE UTILITIES
@@ -402,6 +440,100 @@ function projPts(t) {
   const adjPace = Math.max(0.4, basePace + sosAdj - h2hPenalty);
   return Math.round(s.pts + adjPace * gl);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TIEBREAKER-AWARE PROJECTED PLAYOFF PICTURE
+// ═══════════════════════════════════════════════════════════════
+function projectedStandings() {
+  // Returns projected final standings with tiebreaker resolution
+  // for East conference teams
+  const east = eastTeams();
+
+  // Step 1: project pts for all east teams
+  const projected = east.map(t => ({
+    t,
+    pts: projPts(t),
+    rw:  ST[t] ? ST[t].rw  : 0,
+    row: ST[t] ? ST[t].row : 0,
+    w:   ST[t] ? ST[t].wins : 0,
+    actual: ST[t] ? ST[t].pts : 0,
+    gl: ST[t] ? 82-(ST[t].wins+ST[t].losses+ST[t].otl) : 0
+  }));
+
+  // Step 2: sort by projected pts, then tiebreakers
+  projected.sort((a,b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    // Tiebreaker 1: RW (higher is better)
+    // Note: RW will increase by season end — we use current RW as proxy
+    // since we can't know future regulation wins precisely
+    if (b.rw !== a.rw) return b.rw - a.rw;
+    if (b.row !== a.row) return b.row - a.row;
+    return b.w - a.w;
+  });
+
+  // Step 3: assign projected seeds
+  const atlTeams = projected.filter(p => TEAM_INFO[p.t] && TEAM_INFO[p.t][1]==='ATL');
+  const metTeams = projected.filter(p => TEAM_INFO[p.t] && TEAM_INFO[p.t][1]==='MET');
+  const divQual  = new Set([
+    ...atlTeams.slice(0,3).map(p=>p.t),
+    ...metTeams.slice(0,3).map(p=>p.t)
+  ]);
+  const wcTeams  = projected.filter(p => !divQual.has(p.t));
+
+  // Build result map: team -> {seed, pts, isTied, tbNote}
+  const result = {};
+  [...atlTeams.slice(0,3), ...metTeams.slice(0,3)].forEach((p,i) => {
+    result[p.t] = {projPts: p.pts, inPlayoffs: true};
+  });
+
+  wcTeams.forEach((p, i) => {
+    const isBubble = i <= 2; // WC1, WC2, and first team out
+    const inPlayoffs = i < 2;
+
+    // Check for ties at key cutlines
+    let tbNote = '';
+    if (i === 1 && wcTeams[2]) {
+      // WC2 vs first out — tied pts?
+      const tiedWithNext = p.pts === wcTeams[2].pts;
+      if (tiedWithNext) {
+        const them = wcTeams[2];
+        if (p.rw !== them.rw) {
+          tbNote = `Tied w/ ${them.t} on pts — ${p.rw > them.rw ? 'IN via RW ('+p.rw+' vs '+them.rw+')' : 'OUT — '+them.t+' leads RW ('+them.rw+' vs '+p.rw+')'}`;
+        } else if (p.row !== them.row) {
+          tbNote = `Tied w/ ${them.t} on pts & RW — ${p.row > them.row ? 'IN via ROW' : 'OUT via ROW'}`;
+        } else {
+          tbNote = `Tied w/ ${them.t} on pts, RW & ROW — toss-up`;
+        }
+      }
+    }
+    if (i === 2 && wcTeams[1]) {
+      // First out vs WC2
+      const them = wcTeams[1];
+      const tiedWithPrev = p.pts === them.pts;
+      if (tiedWithPrev) {
+        if (p.rw !== them.rw) {
+          tbNote = `Tied w/ ${them.t} on pts — ${p.rw > them.rw ? 'IN via RW ('+p.rw+' vs '+them.rw+')' : 'OUT — '+them.t+' leads RW ('+them.rw+' vs '+p.rw+')'}`;
+        }
+      }
+    }
+
+    result[p.t] = {projPts: p.pts, inPlayoffs, wcRank: i+1, tbNote};
+  });
+
+  // Also check Metro #2/#3 boundary (PIT vs NYI etc)
+  if (metTeams[1] && metTeams[2] && metTeams[1].pts === metTeams[2].pts) {
+    const m2 = metTeams[1], m3 = metTeams[2];
+    if (m2.rw !== m3.rw) {
+      const note = `Metro #2/#3 tied on pts — ${m2.rw > m3.rw ? m2.t+' holds #2 via RW ('+m2.rw+' vs '+m3.rw+')' : m3.t+' takes #2 via RW ('+m3.rw+' vs '+m2.rw+')'}`;
+      if (result[m2.t]) result[m2.t].tbNote = note;
+      if (result[m3.t]) result[m3.t].tbNote = note;
+    }
+  }
+
+  return {result, wcTeams, metTeams, atlTeams};
+}
+
+
 
 // ═══════════════════════════════════════════════════════════════
 // ADJUSTED SOS
@@ -640,10 +772,15 @@ function renderEast() {
       <td class="num ${ptsCls}">${s.pts}</td>
       <td class="num">${s.wins}</td>
       <td class="num muted">${s.losses}</td>
-      <td class="num muted">${s.otl}</td>
+      <td class="num hide-mobile muted">${s.otl}</td>
       <td class="num rw-col">${s.rw}</td>
       <td class="num row-col">${s.row}</td>
       <td class="num muted">${gl}</td>
+      <td class="num muted">#${rawRank}</td>
+      <td class="num muted">#${rank}${adjFlag}</td>
+      <td class="num diff-col" style="color:${s.diff>0?'#4ade80':s.diff<0?'#f87171':'var(--muted)'}">${s.diff>0?'+':''}${s.diff}</td>
+      <td class="num hide-mobile" style="font-size:.7rem">${s.l10w}-${s.l10l}-${s.l10otl}</td>
+      <td class="num stk-col" style="color:${s.streak&&s.streak[0]==='W'?'#4ade80':s.streak&&s.streak[0]==='L'?'#f87171':'#94a3b8'}">${s.streak||'—'}</td>
       <td class="num proj-col">${proj}</td>
     </tr>`);
   }
@@ -680,7 +817,8 @@ function renderRace() {
     const s=ST[t]; if(!s) return;
     const gp=s.wins+s.losses+s.otl, gl=82-gp;
     const {adj, raw, haircuts}=adjustedSos(t);
-    const rank=sosRank(t);
+    const rank=sosRank(t,true);
+    const rawRank=sosRank(t,false);
     const proj=projPts(t);
     const col=TEAM_COLORS[t]||'#fff';
     const pos=getPos(t);
@@ -711,25 +849,25 @@ function renderRace() {
       return `<span class="${chipCls}" style="color:${oppCol}">${ha==='H'?'vs':'@'}${opp}</span>`;
     }).join('');
 
-    rows.push(`<tr class="${rowCls}">
+    rows.push(`<tr class="${rowCls}" data-uid="${uid}" style="cursor:pointer">
       <td><span class="t-nm" style="color:${col}">${t}</span>${tbNote}</td>
       <td><span class="pos-badge ${pos.cls}">${pos.lbl}</span></td>
       <td class="num">${gp}</td>
       <td class="num ${ptsCls}">${s.pts}</td>
       <td class="num">${s.wins}</td>
-      <td class="num muted">${s.losses}</td>
-      <td class="num muted">${s.otl}</td>
+      <td class="num hide-mobile muted">${s.losses}</td>
+      <td class="num hide-mobile muted">${s.otl}</td>
       <td class="num rw-col">${s.rw}</td>
       <td class="num row-col">${s.row}</td>
       <td class="num muted">${gl}</td>
-      <td class="num muted">${adj.toFixed(3)}${adjFlag}</td>
-      <td class="num muted">#${rank}</td>
+      <td class="num muted">#${rawRank}</td>
+      <td class="num muted">#${rank}${adjFlag}</td>
       <td class="num proj-col">${proj}</td>
     </tr>
     <tr class="tr-chips" id="${uid}" style="display:none">
-      <td colspan="13">
+      <td colspan="16">
         <div class="chip-row">${chips}</div>
-        <button class="toggle-btn" id="btn-${uid}" onclick="toggleSched('${uid}')">▶ Show remaining games</button>
+        <button class="toggle-btn" data-uid="${uid}">▶ Show remaining games</button>
       </td>
     </tr>`);
   }
@@ -784,24 +922,65 @@ function renderClinch(){
     ].filter(Boolean).join(' · ');
   }
 
+  // Get tiebreaker-aware projected picture
+  const {result: projResult, wcTeams: projWC, metTeams: projMet} = projectedStandings();
+  const nyiResult = projResult['NYI'] || {};
+
+  // Determine NYI's projected seed with tiebreaker
+  let nyiSeedNote = '';
+  if (nyiResult.tbNote) nyiSeedNote = `<div style="font-size:.62rem;color:#fbbf24;margin-top:4px">${nyiResult.tbNote}</div>`;
+  else if (nyiResult.inPlayoffs === false) nyiSeedNote = `<div style="font-size:.62rem;color:#f87171;margin-top:4px">Projected OUT on tiebreaker</div>`;
+
   let html=`<div class="cc cc-pace">
     <div class="cc-lbl">NYI Projected</div>
     <div class="cc-val" style="color:var(--org)">${nyiProj} pts</div>
     <span class="cc-badge bdg-pace">${nyi.pts}pts · ${nyiGp}GP · ${nyiGl} left</span>
+    ${nyiSeedNote}
   </div>`;
 
   [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
     const t=threshTeam(pos); if(!t) return;
     const need=projPts(t)+1, diff=need-nyi.pts;
+
+    // Check if NYI and threshold team project to same pts
+    const nyiProj2=projPts('NYI'), threshProj=projPts(t);
+    let tbExtraNote = '';
+    if (nyiProj2 === threshProj) {
+      const edge = tbEdge('NYI', t);
+      const s = ST[t];
+      if (edge === 'ahead') {
+        tbExtraNote = `<div style="font-size:.6rem;color:#4ade80;margin-top:3px">Tied on proj pts — NYI wins TB (RW ${nyi.rw} vs ${s?s.rw:'?'})</div>`;
+      } else if (edge === 'behind') {
+        tbExtraNote = `<div style="font-size:.6rem;color:#f87171;margin-top:3px">Tied on proj pts — ${t} wins TB (RW ${s?s.rw:'?'} vs ${nyi.rw})</div>`;
+      } else {
+        tbExtraNote = `<div style="font-size:.6rem;color:#fbbf24;margin-top:3px">Proj pts tied — tiebreaker unclear (even RW)</div>`;
+      }
+    }
+
     const badge=diff<=0
       ?`<span class="cc-badge bdg-good">On pace ✓</span>`
       :`<span class="cc-badge bdg-need">${diff} more pts</span>`;
     const pop=popup(pos).replace(/"/g,'&quot;');
     html+=`<div class="cc" data-clinch="${pop}" style="cursor:pointer">
       <div class="cc-lbl">${lbl} <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
-      <div class="cc-val">~${need} pts</div>${badge}</div>`;
+      <div class="cc-val">~${need} pts</div>${badge}${tbExtraNote}</div>`;
   });
   row.innerHTML=html;
+  const mn=document.getElementById('magic-numbers');
+  if(mn){
+    const lines=[];
+    [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
+      const t=threshTeam(pos); if(!t) return;
+      const need=projPts(t)+1, diff=need-nyi.pts;
+      if(diff<=0){
+        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span> — on pace`);
+      } else {
+        const winsMin=Math.ceil(diff/2);
+        lines.push(`<span style="color:var(--muted)">${lbl}:</span> need <strong>${diff}pts</strong> in ${nyiGl} games (~${winsMin}+ wins)`);
+      }
+    });
+    mn.innerHTML='<span style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--org)">🎯 Magic Numbers&nbsp;&nbsp;</span>'+lines.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+  }
   row.querySelectorAll('[data-clinch]').forEach(card=>{
     card.addEventListener('click',function(){
       const reason=this.getAttribute('data-clinch'); if(!reason) return;
@@ -839,7 +1018,7 @@ function renderObservations(){
   const adjNote=haircuts.length?` (adj for ${haircuts.join(',')} likely resting)`:'';
 
   const metObs=[
-    {lbl:'📍 Where They Stand',txt:`NYI sits at <strong>Metro #${metRank}</strong> with <strong>${nyi.pts}pts</strong> in ${nyiGp}GP (${nyiGl} left). Projecting <strong>${nyiProj}pts</strong> at current pace. RW: ${nyi.rw} | ROW: ${nyi.row}.`},
+    {lbl:'📍 Where They Stand',txt:`NYI sits at <strong>Metro #${metRank}</strong> with <strong>${nyi.pts}pts</strong> in ${nyiGp}GP (${nyiGl} left). Projecting <strong>${nyiProj}pts</strong>. RW: ${nyi.rw} | ROW: ${nyi.row}. ${nyi.streak?'Streak: <strong>'+nyi.streak+'</strong>.':''} L10: <strong>${nyi.l10w}-${nyi.l10l}-${nyi.l10otl}</strong>.`},
     {lbl:'📊 Schedule Difficulty',txt:`NYI faces the <strong>#${nyiRank} hardest adjusted schedule</strong> remaining (adj SOS ${nyiAdj.toFixed(3)}${adjNote}). ${nyiRank<=5?'A significant challenge down the stretch.':nyiRank<=10?'Tougher than most rivals.':'On par with league average.'}`},
     {lbl:'⚔️ Head-to-Head Games',txt:`<strong>${h2h.length} of ${nyiGl} remaining games (${Math.round(h2h.length/nyiGl*100)}%)</strong> are H2H vs rivals: ${h2h.map(g=>(g[2]==='H'?'vs':'@')+g[1]).join(', ')}. Each is a potential 4-pt swing.`}
   ];
@@ -858,106 +1037,45 @@ function renderObservations(){
   ).join('');
 }
 
-function renderDeepInsights(){
-  const nyi=ST['NYI']; if(!nyi) return;
-  const nyiGp=nyi.wins+nyi.losses+nyi.otl, nyiGl=82-nyiGp;
-  const nyiPp=ptsPct('NYI'), nyiAdj=adjustedSos('NYI').adj, nyiRank=sosRank('NYI');
-  const nyiProj=projPts('NYI');
-  const met=sortedDiv('MET'), wcp=wcPool();
-  const nyiRem=remaining('NYI');
-  const h2h=nyiRem.filter(g=>RACE_GROUP.has(g[1]));
+async function renderDeepInsights(){
+  // Fetch cached AI insights from Netlify Blobs via our proxy
+  const cardsEl = document.getElementById('butchie-cards');
+  const metaEl  = document.getElementById('butchie-meta');
+  if (!cardsEl) return;
+  cardsEl.innerHTML = '<div class="ins-loading">Butchie is thinking...</div>';
 
-  // ── Metro deep ──────────────────────────────────────────────
-  const metroDeep=[];
-  const pit=ST['PIT'];
-  if(pit){
-    const pitGl=82-(pit.wins+pit.losses+pit.otl), pitMax=pit.pts+pitGl*2;
-    const gap=nyi.pts-pit.pts;
-    const h2hVsPit=h2h.filter(g=>g[1]==='PIT').length;
-    const edge=tbEdge('NYI','PIT');
+  try {
+    const r = await fetch('/.netlify/functions/nhl?type=insights');
+    const d = await r.json();
+    const insights = d.insights || [];
+    const genAt = d.generatedAt;
 
-    if(pitMax<nyi.pts){
-      metroDeep.push(`NYI has <strong>mathematically secured Metro #2</strong> — PIT cannot catch them even with a perfect run.`);
-    } else if(gap<=2){
-      let tbCtx='';
-      if(nyi.pts===pit.pts) tbCtx=` In a tiebreaker, NYI ${edge==='ahead'?`leads on RW (${nyi.rw} vs ${pit.rw})`:`trails on RW (${nyi.rw} vs ${pit.rw}) — this is urgent`}.`;
-      metroDeep.push(`Metro #2 is <strong>not secure</strong> — PIT is ${gap===0?'tied':'only '+gap+'pt'+(gap!==1?'s':'')+' back'} with ${pitGl} games left (max ${pitMax}pts).${tbCtx}${h2hVsPit?` NYI faces PIT directly ${h2hVsPit}x — critical games.`:' No H2H remaining.'}`);
-    } else {
-      metroDeep.push(`NYI leads Metro #2 over PIT by <strong>${gap}pts</strong> (PIT max: ${pitMax}pts). Tiebreaker: NYI RW=${nyi.rw} vs PIT RW=${pit.rw} — NYI ${nyi.rw>=pit.rw?'holds':'trails'} the edge.`);
+    if (!insights.length) {
+      cardsEl.innerHTML = '<div class="ins-loading">Butchie hasn\'t weighed in yet — check back after the next game.</div>';
+      return;
     }
+
+    cardsEl.innerHTML = insights.map(ins =>
+      `<div class="ins-card butchie-card">
+        <div class="butchie-hd">
+          <span class="butchie-avatar">🏒</span>
+          <span class="butchie-name">Butchie's AI-nalysis</span>
+        </div>
+        <p class="ins-txt">${ins}</p>
+      </div>`
+    ).join('');
+
+    if (metaEl && genAt) {
+      const dt = new Date(genAt);
+      const timeStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+
+        dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+      metaEl.innerHTML = `Last updated: ${timeStr} &nbsp;·&nbsp; <em>These insights are brought to you by AI. If you have an issue with them, take it up with our AI overlords.</em>`;
+    }
+  } catch(e) {
+    cardsEl.innerHTML = '<div class="ins-loading">Butchie is temporarily unavailable. Try again soon.</div>';
   }
-
-  const car=met[0]?ST[met[0]]:null;
-  const nyiMax=nyi.pts+nyiGl*2;
-  if(car){
-    const gapToCar=car.pts-nyi.pts;
-    if(nyiMax>car.pts) metroDeep.push(`Mathematically, NYI can still catch <strong>Metro #1 (${met[0]})</strong> — trail by ${gapToCar}pts, max ${nyiMax}pts possible. Requires ${met[0]} to stumble significantly.`);
-    else metroDeep.push(`${met[0]}'s Metro #1 is out of reach — NYI's max (${nyiMax}pts) falls short. <strong>Metro #2 is the ceiling.</strong>`);
-  }
-
-  if(h2h.length){
-    const pct=Math.round(h2h.length/nyiGl*100);
-    const teams=[...new Set(h2h.map(g=>g[1]))];
-    metroDeep.push(`<strong>${h2h.length} of ${nyiGl} games (${pct}%) are H2H vs rivals</strong> (${teams.join(', ')}) — each a potential 4-pt swing. NYI controls more of their fate than raw SOS suggests.`);
-  }
-
-  if(nyiPp<nyiAdj){
-    const diff=(nyiAdj-nyiPp).toFixed(3);
-    metroDeep.push(`NYI's pts% (<strong>${nyiPp.toFixed(3)}</strong>) is below their adj SOS (<strong>${nyiAdj.toFixed(3)}</strong>) by ${diff} — slightly underperforming relative to opponents. A concern heading into a tough close.`);
-  } else {
-    const diff=(nyiPp-nyiAdj).toFixed(3);
-    metroDeep.push(`NYI's pts% (<strong>${nyiPp.toFixed(3)}</strong>) exceeds their adj SOS (<strong>${nyiAdj.toFixed(3)}</strong>) by ${diff} — outperforming schedule difficulty, a positive sign.`);
-  }
-
-  document.getElementById('metro-deep-cards').innerHTML=metroDeep.map(ins=>
-    `<div class="ins-card ins-deep"><p class="ins-txt">${ins}</p></div>`).join('');
-
-  // ── WC deep ─────────────────────────────────────────────────
-  const wcDeep=[];
-  const rivals=[...RACE_GROUP].filter(t=>t!=='NYI');
-
-  // Convergence
-  const convergers=rivals.map(t=>{
-    const s=ST[t]; if(!s) return null;
-    return {t,gapNow:nyi.pts-s.pts,gapProj:nyiProj-projPts(t),proj:projPts(t)};
-  }).filter(Boolean).sort((a,b)=>a.gapProj-b.gapProj);
-  if(convergers.length){
-    const {t,gapNow,gapProj,proj}=convergers[0];
-    const trend=gapProj<gapNow-1?'closing fast':Math.abs(gapProj-gapNow)<=1?'holding steady':'widening';
-    const edge=tbEdge('NYI',t);
-    const s=ST[t];
-    let tbNote='';
-    if(Math.abs(nyi.pts-s.pts)<=2) tbNote=` TB: NYI RW=${nyi.rw} vs ${t} RW=${s.rw} — ${edge==='ahead'?'NYI leads':'NYI trails'}.`;
-    wcDeep.push(`<strong>${t} is the most dangerous convergence threat</strong> — currently ${gapNow}pts back, projected gap narrows to ${Math.max(0,gapProj)}pts (${trend}).${tbNote} At pace, ${t} finishes at ${proj}pts.`);
-  }
-
-  // Adj SOS mismatches
-  rivals.filter(t=>{
-    const rank=sosRank(t), proj=projPts(t);
-    return (rank<=8&&proj>=nyi.pts)||(rank>=22&&proj>=nyiProj-2);
-  }).slice(0,2).forEach(t=>{
-    const rank=sosRank(t), proj=projPts(t), pp=ptsPct(t).toFixed(3);
-    const {haircuts}=adjustedSos(t);
-    if(rank<=8) wcDeep.push(`<strong>${t}'s ${proj}pt projection is hardest to sustain</strong> — faces the #${rank} toughest remaining schedule. Their pts% (${pp}) will likely compress.${haircuts.length?' Adj SOS already discounts '+haircuts.join(',')+' likely resting.':''}`);
-    else wcDeep.push(`<strong>${t}'s ${proj}pt projection may be inflated</strong> — #${rank} easiest schedule. Their pace reflects softer competition.`);
-  });
-
-  // Elimination
-  const dead=rivals.filter(t=>{const s=ST[t];return s&&s.pts+(82-(s.wins+s.losses+s.otl))*2<nyi.pts;});
-  if(dead.length) wcDeep.push(`<strong>Effectively eliminated from catching NYI:</strong> ${dead.join(', ')} — their max pts fall short of NYI's current total.`);
-  else wcDeep.push(`No rival is mathematically eliminated yet — <strong>every team can still catch NYI</strong>. Every game matters.`);
-
-  // Pts/game needed
-  const wc2=wcp[2];
-  if(wc2&&nyiGl){
-    const need=projPts(wc2)+1, diff=need-nyi.pts;
-    const ppg=(diff/nyiGl).toFixed(2), curPpg=(nyi.pts/nyiGp).toFixed(2);
-    if(diff>0) wcDeep.push(`To clinch WC2 (~${need}pts), NYI needs <strong>${ppg}pts/game</strong> over ${nyiGl} remaining. Current pace: ${curPpg}pts/game — ${parseFloat(curPpg)>=parseFloat(ppg)?'<strong>on track</strong>.':'<strong>below the required rate</strong>.'}`);
-  }
-
-  document.getElementById('wc-deep-cards').innerHTML=wcDeep.map(ins=>
-    `<div class="ins-card ins-deep"><p class="ins-txt">${ins}</p></div>`).join('');
 }
+
 
 function renderField(){
   const grid=document.getElementById('field-grid');
@@ -1070,8 +1188,42 @@ function _renderScores(games){
   const ts=document.getElementById('sc-ts');
   if(!row) return;
   if(!filtered.length){row.innerHTML='<span class="sc-none">No race group games today</span>';if(ts)ts.textContent='';return;}
-  row.innerHTML=filtered.map(g=>_buildCard(g.awayTeam.abbrev,g.homeTeam.abbrev,g.awayTeam.score||0,g.homeTeam.score||0,g.gameState,_gameLabel(g))).join('');
-  if(ts) ts.textContent='Updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+  row.innerHTML=filtered.map(g=>{
+    const card=_buildCard(g.awayTeam.abbrev,g.homeTeam.abbrev,g.awayTeam.score||0,g.homeTeam.score||0,g.gameState,_gameLabel(g));
+    const isNYI=g.awayTeam.abbrev==='NYI'||g.homeTeam.abbrev==='NYI';
+    return isNYI?`<div class="sc-nyi-wrap">${card}</div>`:card;
+  }).join('');
+  const now=new Date();
+  const tsStr=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
+  if(ts) ts.textContent=_scoreOffset===0?'Updated '+tsStr:_dateLabel(_scoreOffset);
+  const raceTs=document.getElementById('race-ts');
+  if(raceTs) raceTs.textContent='Live · '+tsStr;
+  const tonightBar=document.getElementById('tonight-bar');
+  if(tonightBar){
+    if(_scoreOffset!==0){ tonightBar.style.display='none'; }
+    else {
+    const nyiGame=filtered.find(g=>g.awayTeam.abbrev==='NYI'||g.homeTeam.abbrev==='NYI');
+    if(nyiGame){
+      const s=nyiGame.gameState, away=nyiGame.awayTeam.abbrev, home=nyiGame.homeTeam.abbrev;
+      const opp=away==='NYI'?home:away, ha=home==='NYI'?'vs':'@';
+      if(s==='FUT'||s==='PRE'){
+        tonightBar.textContent='🏒 Tonight: NYI '+ha+' '+opp+' · '+_gameLabel(nyiGame);
+        tonightBar.style.display='block'; tonightBar.style.color='#FFB81C';
+      } else if(s==='LIVE'||s==='CRIT'){
+        const aS=nyiGame.awayTeam.score||0,hS=nyiGame.homeTeam.score||0;
+        const nyiS=away==='NYI'?aS:hS, oppS=away==='NYI'?hS:aS;
+        tonightBar.textContent='🔴 LIVE: NYI '+nyiS+' — '+opp+' '+oppS+' · '+_gameLabel(nyiGame);
+        tonightBar.style.display='block'; tonightBar.style.color='#4ade80';
+      } else {
+        // All today's NYI games are final — show next scheduled game from baked-in schedule
+        _showNextGame(tonightBar);
+      }
+    } else {
+      // No NYI game today at all — show next scheduled game
+      _showNextGame(tonightBar);
+    }
+    } // end _scoreOffset===0
+  }
   _attachTip();
 }
 
@@ -1151,6 +1303,16 @@ function toggleSched(uid){
   if(btn) btn.textContent=open?'▶ Show remaining games':'▼ Hide remaining games';
 }
 
+// Event delegation for individual schedule toggles
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.toggle-btn[data-uid]');
+  if (btn) { e.stopPropagation(); toggleSched(btn.getAttribute('data-uid')); return; }
+  var row = e.target.closest('tr[data-uid]');
+  if (row && !e.target.closest('button') && !e.target.closest('.pos-badge')) {
+    toggleSched(row.getAttribute('data-uid'));
+  }
+});
+
 // Expand/collapse all
 let allExpanded=false;
 function toggleAll(){
@@ -1164,6 +1326,25 @@ function toggleAll(){
 // ═══════════════════════════════════════════════════════════════
 // MAIN
 // ═══════════════════════════════════════════════════════════════
+function _showNextGame(bar) {
+  // Find next NYI game from baked-in schedule (future dates only)
+  const today = todayDate();
+  const nyi_sched = FULL_SCHEDULE['NYI'] || [];
+  // Find first game strictly after today
+  const next = nyi_sched.find(g => parseGameDate(g[0]) > today);
+  if (!next) { bar.style.display='none'; return; }
+  const [dt, opp, ha] = next;
+  const haStr = ha==='H' ? 'vs' : '@';
+  // Format date nicely: "Mar 31" -> "Tomorrow" if it's tomorrow, else the date
+  const gameDate = parseGameDate(dt);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+  const dayLabel = gameDate.getTime()===tomorrow.getTime() ? 'Tomorrow'
+    : dt; // "Apr 3" etc — already formatted nicely
+  bar.textContent = '📅 Next: NYI ' + haStr + ' ' + opp + ' · ' + dayLabel;
+  bar.style.display = 'block';
+  bar.style.color = 'rgba(255,255,255,.6)';
+}
+
 async function loadAll(){
   const ok=await fetchStandings();
   if(!ok) return;
@@ -1173,6 +1354,9 @@ async function loadAll(){
   renderObservations();
   renderDeepInsights();
   renderField();
+  _scoreOffset = 0;
+  const _navLbl=document.getElementById('sc-nav-date');
+  if(_navLbl) _navLbl.textContent='Today';
   _fetchScores();
   if(_scoreTimer) clearInterval(_scoreTimer);
   _scoreTimer=setInterval(_fetchScores,60000);
