@@ -1,19 +1,19 @@
-// Scheduled function — runs hourly, generates AI insights after race group games finish
-// Stores result in Netlify Blobs for fast page-load retrieval
-
 const https = require('https');
 const { getStore } = require('@netlify/blobs');
 
-// ── Fetch helpers ────────────────────────────────────────────────
-function fetchUrl(url, opts = {}) {
+// ── Fetch helpers ─────────────────────────────────────────────────
+function fetchUrl(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
+    if (redirectCount > 5) return reject(new Error('Too many redirects'));
     const lib = url.startsWith('https') ? https : require('http');
     const req = lib.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json', ...opts }
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
     }, (res) => {
       if ([301,302,307,308].includes(res.statusCode) && res.headers.location) {
+        const location = res.headers.location;
+        const nextUrl = location.startsWith('http') ? location : new URL(location, url).href;
         res.resume();
-        return fetchUrl(res.headers.location).then(resolve).catch(reject);
+        return fetchUrl(nextUrl, redirectCount + 1).then(resolve).catch(reject);
       }
       let data = '';
       res.on('data', c => data += c);
@@ -49,132 +49,164 @@ function postJson(url, payload, headers = {}) {
   });
 }
 
-// ── Race group ───────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────
 const RACE_GROUP = new Set(['BOS','CBJ','DET','NYI','OTT','PHI','PIT']);
 
-// ── Main handler ─────────────────────────────────────────────────
+// ── Main handler ──────────────────────────────────────────────────
 exports.handler = async (event) => {
   console.log('generate-insights: starting', new Date().toISOString());
+  const store = getStore('insights-cache');
 
   try {
-    // 1. Fetch current standings
+    // 1. Fetch today's scores
+    const scRes = await fetchUrl('https://api-web.nhle.com/v1/score/now');
+    if (scRes.status !== 200) throw new Error('Scores fetch failed: ' + scRes.status);
+    const scData = JSON.parse(scRes.body);
+
+    // 2. Build current game state snapshot for race group games
+    // Key: gameId, Value: { away, home, state, awayScore, homeScore }
+    const currentSnapshot = {};
+    const finishedGames = [];
+
+    (scData.games || []).forEach(g => {
+      const away = g.awayTeam?.abbrev, home = g.homeTeam?.abbrev;
+      if (!RACE_GROUP.has(away) && !RACE_GROUP.has(home)) return;
+      const gameId = String(g.id);
+      const state = g.gameState;
+      currentSnapshot[gameId] = {
+        away, home, state,
+        awayScore: g.awayTeam?.score || 0,
+        homeScore: g.homeTeam?.score || 0
+      };
+      if (state === 'OFF' || state === 'FINAL') {
+        finishedGames.push(`${away} ${g.awayTeam?.score||0} - ${g.homeTeam?.score||0} ${home}`);
+      }
+    });
+
+    // 3. Load previous snapshot from Blobs
+    let previousSnapshot = {};
+    let insightsAge = Infinity;
+    try {
+      const prev = await store.getJSON('game-snapshot');
+      if (prev) previousSnapshot = prev;
+    } catch(e) { /* no previous snapshot */ }
+
+    try {
+      const existing = await store.getJSON('nyi-insights');
+      if (existing?.generatedAt) {
+        insightsAge = (Date.now() - new Date(existing.generatedAt).getTime()) / 60000;
+      }
+    } catch(e) { /* no existing insights */ }
+
+    // 4. Detect games that newly transitioned to finished since last run
+    // A meaningful trigger = a race group game flipped from non-final to final
+    const newlyFinished = [];
+    Object.entries(currentSnapshot).forEach(([gameId, curr]) => {
+      const prev = previousSnapshot[gameId];
+      const currFinal = curr.state === 'OFF' || curr.state === 'FINAL';
+      const prevFinal = prev && (prev.state === 'OFF' || prev.state === 'FINAL');
+
+      if (currFinal && !prevFinal) {
+        // Game just finished since last run
+        newlyFinished.push(`${curr.away} ${curr.awayScore} - ${curr.homeScore} ${curr.home}`);
+        console.log('Newly finished:', gameId, curr.away, 'vs', curr.home);
+      }
+    });
+
+    // 5. Save current snapshot for next run (always update this)
+    await store.setJSON('game-snapshot', currentSnapshot);
+
+    // 6. Decide whether to generate new insights
+    const shouldGenerate =
+      newlyFinished.length > 0 ||        // A race group game just finished
+      insightsAge === Infinity ||          // No insights ever generated
+      insightsAge > 24 * 60;              // Fallback: regenerate daily even if no games
+
+    if (!shouldGenerate) {
+      console.log(`Skipping — no newly finished games, insights ${Math.round(insightsAge)}min old`);
+      return { statusCode: 200, body: JSON.stringify({ skipped: true, reason: 'no new games', insightsAge: Math.round(insightsAge) }) };
+    }
+
+    console.log('Generating insights. Triggers:', newlyFinished.length ? newlyFinished.join(', ') : 'age/first-run');
+
+    // 7. Fetch standings for full context
     const stRes = await fetchUrl('https://api-web.nhle.com/v1/standings/now');
     if (stRes.status !== 200) throw new Error('Standings fetch failed: ' + stRes.status);
     const stData = JSON.parse(stRes.body);
 
-    // 2. Build standings map for race group
     const ST = {};
     (stData.standings || []).forEach(row => {
       const abbrev = (row.teamAbbrev && typeof row.teamAbbrev === 'object')
         ? row.teamAbbrev.default : row.teamAbbrev;
       if (!abbrev || !RACE_GROUP.has(abbrev)) return;
       ST[abbrev] = {
-        pts:    row.points || 0,
-        gp:     row.gamesPlayed || 0,
-        wins:   row.wins || 0,
-        losses: row.losses || 0,
-        otl:    row.otLosses || 0,
-        rw:     row.regulationWins || 0,
-        row:    row.regulationPlusOtWins || 0,
-        diff:   row.goalDifferential || 0,
-        l10w:   row.l10Wins || 0,
-        l10l:   row.l10Losses || 0,
-        l10otl: row.l10OtLosses || 0,
-        streak: row.streakCode || '',
-        conf:   row.conferenceAbbrev || '',
-        div:    row.divisionAbbrev || ''
+        pts: row.points||0, gp: row.gamesPlayed||0,
+        wins: row.wins||0, losses: row.losses||0, otl: row.otLosses||0,
+        rw: row.regulationWins||0, row: row.regulationPlusOtWins||0,
+        diff: row.goalDifferential||0,
+        l10w: row.l10Wins||0, l10l: row.l10Losses||0, l10otl: row.l10OtLosses||0,
+        streak: row.streakCode||''
       };
     });
 
-    if (!ST['NYI']) throw new Error('NYI not found in standings');
+    if (!ST['NYI']) throw new Error('NYI not in standings');
 
-    // 3. Fetch today's scores to check if race group games finished recently
-    const scRes = await fetchUrl('https://api-web.nhle.com/v1/score/now');
-    let recentResults = [];
-    if (scRes.status === 200) {
-      const scData = JSON.parse(scRes.body);
-      (scData.games || []).forEach(g => {
-        const away = g.awayTeam?.abbrev, home = g.homeTeam?.abbrev;
-        const state = g.gameState;
-        if ((RACE_GROUP.has(away) || RACE_GROUP.has(home)) &&
-            (state === 'OFF' || state === 'FINAL')) {
-          recentResults.push(
-            `${away} ${g.awayTeam?.score||0} - ${g.homeTeam?.score||0} ${home} (Final)`
-          );
-        }
-      });
-    }
-
-    // 4. Check blob for last update time — skip if updated in last 55 min and no new games
-    const store = getStore('insights-cache');
-    let lastMeta = null;
-    try {
-      const existing = await store.getWithMetadata('nyi-insights');
-      if (existing && existing.metadata) {
-        lastMeta = existing.metadata;
-        const lastUpdate = new Date(lastMeta.updatedAt || 0);
-        const minutesSince = (Date.now() - lastUpdate.getTime()) / 60000;
-        if (minutesSince < 55 && recentResults.length === 0) {
-          console.log('Skipping — no new games and updated', Math.round(minutesSince), 'min ago');
-          return { statusCode: 200, body: JSON.stringify({ skipped: true }) };
-        }
-      }
-    } catch(e) { /* no existing blob, proceed */ }
-
-    // 5. Build context for GPT
+    // 8. Build rich prompt context
     const nyi = ST['NYI'];
-    const nyiGl = 82 - nyi.gp;
-    const nyiPace = nyi.pts / nyi.gp;
-    const nyiProj = Math.round(nyi.pts + nyiPace * nyiGl);
-
-    // Sort race group by pts
-    const sorted = Object.entries(ST)
-      .sort((a,b) => b[1].pts - a[1].pts);
+    const sorted = Object.entries(ST).sort((a,b) => b[1].pts - a[1].pts);
 
     const standingsStr = sorted.map(([t, s]) => {
-      const gp = s.wins + s.losses + s.otl;
-      const gl = 82 - gp;
-      const proj = Math.round(s.pts + (s.pts/gp) * gl);
+      const gp = s.wins+s.losses+s.otl, gl = 82-gp;
+      const proj = gp ? Math.round(s.pts + (s.pts/gp)*gl) : s.pts;
       const l10 = `${s.l10w}-${s.l10l}-${s.l10otl}`;
-      return `${t}: ${s.pts}pts (${s.wins}W-${s.losses}L-${s.otl}OTL, ${gp}GP, ${gl}left) | RW:${s.rw} ROW:${s.row} DIFF:${s.diff>0?'+':''}${s.diff} L10:${l10} Streak:${s.streak} | Proj:${proj}pts`;
+      const ptsPct = gp ? ((s.wins*2+s.otl)/(gp*2)).toFixed(3) : '.000';
+      return `${t}: ${s.pts}pts | ${s.wins}-${s.losses}-${s.otl} (${gp}GP, ${gl}left) | RW:${s.rw} ROW:${s.row} DIFF:${s.diff>=0?'+':''}${s.diff} | L10:${l10} Streak:${s.streak} | Pts%:${ptsPct} Proj:${proj}pts`;
     }).join('\n');
 
-    // Tiebreaker context
-    const tbLines = [];
-    sorted.forEach(([t, s]) => {
-      if (t === 'NYI') return;
-      if (Math.abs(nyi.pts - s.pts) <= 3) {
-        const rwEdge = nyi.rw > s.rw ? 'NYI leads RW' : nyi.rw < s.rw ? `${t} leads RW` : 'RW tied';
-        tbLines.push(`NYI vs ${t}: ${nyi.pts-s.pts>0?'+'+(nyi.pts-s.pts):nyi.pts-s.pts}pts gap | ${rwEdge} (${nyi.rw} vs ${s.rw})`);
-      }
-    });
+    // Close tiebreaker situations
+    const tbLines = sorted
+      .filter(([t]) => t !== 'NYI' && Math.abs(nyi.pts - ST[t].pts) <= 3)
+      .map(([t, s]) => {
+        const gap = nyi.pts - s.pts;
+        const rwEdge = nyi.rw > s.rw ? `NYI leads RW (${nyi.rw} vs ${s.rw})` :
+                       nyi.rw < s.rw ? `${t} leads RW (${s.rw} vs ${nyi.rw})` :
+                       `RW tied at ${nyi.rw}`;
+        const rowEdge = nyi.row > s.row ? `NYI leads ROW` : nyi.row < s.row ? `${t} leads ROW` : `ROW tied`;
+        return `NYI vs ${t}: ${gap >= 0 ? '+' : ''}${gap}pts | ${rwEdge} | ${rowEdge}`;
+      });
 
-    const recentStr = recentResults.length
-      ? `\nRecent results:\n${recentResults.join('\n')}`
-      : '';
+    const recentStr = newlyFinished.length
+      ? `\nGames that just finished:\n${newlyFinished.join('\n')}`
+      : finishedGames.length
+      ? `\nToday's completed race group games:\n${finishedGames.join('\n')}`
+      : '\nNo race group games today.';
 
-    const prompt = `You are Butchie, the AI analyst for the NYI Castaways Playoff Race Hub. You're a sharp, knowledgeable hockey analyst — think of a beat writer who really knows the stats. You're a die-hard Islanders fan but you're honest about what the numbers say.
+    const gamesLeft = 82 - nyi.gp;
+    const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
-Current race group standings (Eastern Conference playoff bubble):
+    const prompt = `You are Butchie, the AI analyst for the NYI Castaways Playoff Race Hub — a sharp, honest hockey analyst who's also a die-hard Islanders fan. You write like a beat writer with a supercomputer: specific, opinionated, and willing to say uncomfortable things when the numbers demand it.
+
+RACE GROUP STANDINGS (Eastern Conference playoff bubble):
 ${standingsStr}
 
-Tiebreaker situations (within 3pts of NYI):
-${tbLines.length ? tbLines.join('\n') : 'No close tiebreaker situations currently'}
+TIEBREAKER SITUATIONS (teams within 3pts of NYI):
+${tbLines.length ? tbLines.join('\n') : 'No close tiebreaker situations'}
 ${recentStr}
 
-NYI has ${nyiGl} games remaining. Season ends April 16.
+NYI has ${gamesLeft} games remaining. Season ends April 16, 2026.
 
-Write 3-4 sharp, distinct analytical insights about where the Islanders stand in the playoff race. Each insight should:
-- Uncover something non-obvious that requires synthesizing multiple data points
-- Be specific — reference actual numbers, team names, trends
-- Sound like a knowledgeable analyst, not a stats printout
-- Be honest — if NYI is in trouble, say so; if they're in good shape, explain why
-- Be 2-3 sentences max each
+Your job: write 3-4 distinct analytical insights about the Islanders' playoff situation. Each insight must:
+- Synthesize multiple data points to surface something non-obvious
+- Be specific — use real numbers, team names, and trends
+- Sound like a sharp analyst, not a data dump
+- Be honest — if NYI is in trouble, say so clearly
+- Be 2-3 sentences max
+- Avoid generic statements like "every game matters" or "the race is tight"
 
-Format as a JSON array of strings, each string being one insight. No preamble, just the JSON array.
-Example format: ["insight 1", "insight 2", "insight 3"]`;
+Respond ONLY with a valid JSON array of strings. No preamble, no markdown, no explanation.
+Example: ["First insight here.", "Second insight here.", "Third insight here."]`;
 
-    // 6. Call OpenAI
+    // 9. Call OpenAI
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
@@ -189,37 +221,41 @@ Example format: ["insight 1", "insight 2", "insight 3"]`;
       { 'Authorization': 'Bearer ' + apiKey }
     );
 
-    if (aiRes.status !== 200) throw new Error('OpenAI error: ' + aiRes.status + ' ' + aiRes.body);
+    if (aiRes.status !== 200) throw new Error('OpenAI error ' + aiRes.status + ': ' + aiRes.body);
 
     const aiData = JSON.parse(aiRes.body);
     const content = aiData.choices?.[0]?.message?.content || '';
+    console.log('OpenAI response:', content.slice(0, 200));
 
-    // Parse JSON array from response
+    // Parse JSON array
     let insights = [];
     try {
       const cleaned = content.replace(/```json|```/g, '').trim();
       insights = JSON.parse(cleaned);
-      if (!Array.isArray(insights)) throw new Error('Not an array');
+      if (!Array.isArray(insights)) throw new Error('Not array');
     } catch(e) {
-      // Fallback: split on newlines if JSON parse fails
-      insights = content.split('\n').filter(l => l.trim().length > 20);
+      // Fallback: split by newline
+      insights = content.split('\n')
+        .map(l => l.replace(/^[\d\-\.\*\s"]+/, '').replace(/"[\,]?$/, '').trim())
+        .filter(l => l.length > 30);
     }
 
-    // 7. Store in Netlify Blobs
+    // 10. Store insights
     const payload = {
       insights,
       generatedAt: new Date().toISOString(),
-      recentGames: recentResults,
+      triggers: newlyFinished,
       nyiPts: nyi.pts,
       nyiGp: nyi.gp
     };
 
-    await store.setJSON('nyi-insights', payload, {
-      metadata: { updatedAt: new Date().toISOString() }
-    });
+    await store.setJSON('nyi-insights', payload);
 
     console.log('generate-insights: stored', insights.length, 'insights');
-    return { statusCode: 200, body: JSON.stringify({ ok: true, count: insights.length }) };
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ ok: true, count: insights.length, triggers: newlyFinished })
+    };
 
   } catch(e) {
     console.error('generate-insights error:', e.message);
