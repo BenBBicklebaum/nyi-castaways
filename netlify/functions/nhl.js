@@ -1,19 +1,26 @@
 const https = require('https');
+const http  = require('http');
 
-function fetchUrl(url) {
+function fetchUrl(url, redirectCount = 0) {
   return new Promise((resolve, reject) => {
-    const req = https.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0',
-        'Accept': 'application/json'
-      }
+    if (redirectCount > 5) return reject(new Error('Too many redirects'));
+    const lib = url.startsWith('https') ? https : http;
+    const req = lib.get(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
     }, (res) => {
+      // Follow redirects (301, 302, 307, 308)
+      if ([301,302,307,308].includes(res.statusCode) && res.headers.location) {
+        const location = res.headers.location;
+        const nextUrl = location.startsWith('http') ? location : new URL(location, url).href;
+        res.resume(); // drain
+        return fetchUrl(nextUrl, redirectCount + 1).then(resolve).catch(reject);
+      }
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => resolve({ status: res.statusCode, body: data, ok: true }));
+      res.on('end', () => resolve({ status: res.statusCode, body: data }));
     });
-    req.on('error', (e) => resolve({ status: 0, body: '', ok: false, error: e.message }));
-    req.setTimeout(8000, () => { req.destroy(); resolve({ status: 0, body: '', ok: false, error: 'timeout' }); });
+    req.on('error', reject);
+    req.setTimeout(10000, () => { req.destroy(); reject(new Error('timeout')); });
   });
 }
 
@@ -26,7 +33,7 @@ exports.handler = async (event) => {
   const type = (event.queryStringParameters || {}).type || 'test';
 
   if (type === 'test') {
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true, message: 'Function running' }) };
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) };
   }
 
   const urls = {
@@ -35,23 +42,12 @@ exports.handler = async (event) => {
   };
 
   const url = urls[type];
-  if (!url) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Unknown type: ' + type }) };
+  if (!url) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Unknown type' }) };
 
-  const result = await fetchUrl(url);
-
-  if (!result.ok || result.status !== 200) {
-    return {
-      statusCode: 200,
-      headers: CORS,
-      body: JSON.stringify({
-        error: result.error || 'Fetch failed',
-        status: result.status,
-        url,
-        type
-      })
-    };
+  try {
+    const r = await fetchUrl(url);
+    return { statusCode: 200, headers: CORS, body: r.body };
+  } catch(e) {
+    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
   }
-
-  // Return raw NHL API response
-  return { statusCode: 200, headers: CORS, body: result.body };
 };
