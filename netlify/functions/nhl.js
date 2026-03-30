@@ -8,11 +8,10 @@ function fetchUrl(url, redirectCount = 0) {
     const req = lib.get(url, {
       headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' }
     }, (res) => {
-      // Follow redirects (301, 302, 307, 308)
       if ([301,302,307,308].includes(res.statusCode) && res.headers.location) {
         const location = res.headers.location;
         const nextUrl = location.startsWith('http') ? location : new URL(location, url).href;
-        res.resume(); // drain
+        res.resume();
         return fetchUrl(nextUrl, redirectCount + 1).then(resolve).catch(reject);
       }
       let data = '';
@@ -30,24 +29,48 @@ const CORS = {
 };
 
 exports.handler = async (event) => {
-  const type = (event.queryStringParameters || {}).type || 'test';
+  const params = event.queryStringParameters || {};
+  const type = params.type || 'test';
 
   if (type === 'test') {
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) };
   }
 
-  const urls = {
-    standings: 'https://api-web.nhle.com/v1/standings/now',
-    scores:    'https://api-web.nhle.com/v1/score/now'
-  };
-
-  const url = urls[type];
-  if (!url) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Unknown type' }) };
-
-  try {
-    const r = await fetchUrl(url);
-    return { statusCode: 200, headers: CORS, body: r.body };
-  } catch(e) {
-    return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+  // ── Cached AI insights from Netlify Blobs ──────────────────────
+  if (type === 'insights') {
+    try {
+      const { getStore } = require('@netlify/blobs');
+      const store = getStore('insights-cache');
+      const data = await store.getJSON('nyi-insights');
+      if (!data) return { statusCode: 200, headers: CORS, body: JSON.stringify({ insights: [], generatedAt: null }) };
+      return { statusCode: 200, headers: CORS, body: JSON.stringify(data) };
+    } catch(e) {
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ insights: [], generatedAt: null, error: e.message }) };
+    }
   }
+
+  // ── Standings ──────────────────────────────────────────────────
+  if (type === 'standings') {
+    try {
+      const r = await fetchUrl('https://api-web.nhle.com/v1/standings/now');
+      return { statusCode: 200, headers: CORS, body: r.body };
+    } catch(e) {
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
+  // ── Scores (with optional date) ────────────────────────────────
+  if (type === 'scores') {
+    try {
+      const url = params.date
+        ? 'https://api-web.nhle.com/v1/score/' + params.date
+        : 'https://api-web.nhle.com/v1/score/now';
+      const r = await fetchUrl(url);
+      return { statusCode: 200, headers: CORS, body: r.body };
+    } catch(e) {
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
+  return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Unknown type: ' + type }) };
 };
