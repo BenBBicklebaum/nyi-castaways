@@ -239,7 +239,7 @@ details[open] summary{border-radius:8px 8px 0 0}
       <div id="metro-obs-cards" class="ins-loading">Loading...</div>
     </div>
     <div class="ins-tier-hd" onclick="toggleTier('metro-deep-body','metro-deep-chev')">
-      <span>Deep Insights <span class="ai-badge">AI</span></span>
+      <span>Deep Insights </span>
       <span class="tier-chev" id="metro-deep-chev">▶</span>
     </div>
     <div id="metro-deep-body" class="ins-stack" style="display:none">
@@ -259,7 +259,7 @@ details[open] summary{border-radius:8px 8px 0 0}
       <div id="wc-obs-cards" class="ins-loading">Loading...</div>
     </div>
     <div class="ins-tier-hd" onclick="toggleTier('wc-deep-body','wc-deep-chev')">
-      <span>Deep Insights <span class="ai-badge">AI</span></span>
+      <span>Deep Insights </span>
       <span class="tier-chev" id="wc-deep-chev">▶</span>
     </div>
     <div id="wc-deep-body" class="ins-stack" style="display:none">
@@ -766,118 +766,131 @@ function renderField() {
 // ═══════════════════════════════════════════════════════════════════
 // AI INSIGHTS (via Anthropic API)
 // ═══════════════════════════════════════════════════════════════════
-async function fetchAIInsights() {
+function fetchAIInsights() {
+  // Rule-based deep insights (no API call)
   const nyi = ST['NYI']; if (!nyi) return;
-  const met = sortedDiv('MET'), wcp = wcPool();
   const nyiGp = nyi.wins+nyi.losses+nyi.otl, nyiGl = 82-nyiGp;
+  const nyiPp = ptsPct('NYI'), nyiSos = sos('NYI'), nyiRank = sosRank('NYI');
+  const nyiProj = projPts('NYI');
+  const met = sortedDiv('MET'), wcp = wcPool();
+  const nyiRem = remaining('NYI');
+  const h2h = nyiRem.filter(g => RACE_GROUP.has(g[1]));
 
-  // Build structured data payload for Claude
-  const data = {
-    asOf: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
-    nyiStandings: {
-      pts: nyi.pts, wins: nyi.wins, losses: nyi.losses, otl: nyi.otl,
-      gp: nyiGp, gamesLeft: nyiGl,
-      projectedPts: projPts('NYI'),
-      sos: sos('NYI').toFixed(3),
-      sosRank: sosRank('NYI'),
-      ptsPct: ptsPct('NYI').toFixed(3),
-      metroRank: met.indexOf('NYI')+1,
-      wcRank: wcp.indexOf('NYI')+1
-    },
-    rivals: [...RACE_GROUP].filter(t=>t!=='NYI').map(t => {
-      const s = ST[t]; if (!s) return null;
-      const gp = s.wins+s.losses+s.otl, gl = 82-gp;
-      return {
-        team: t, pts: s.pts, wins: s.wins, losses: s.losses, otl: s.otl,
-        gp, gamesLeft: gl, projectedPts: projPts(t),
-        sos: sos(t).toFixed(3), sosRank: sosRank(t), ptsPct: ptsPct(t).toFixed(3),
-        ptsGapToNYI: nyi.pts - s.pts,
-        h2hVsNYI: remaining('NYI').filter(g=>g[1]===t).length,
-        remainingH2HGames: remaining(t).filter(g=>RACE_GROUP.has(g[1])).length,
-        position: getPos(t).lbl,
-        projectedGapToNYI: projPts('NYI') - projPts(t)
-      };
-    }).filter(Boolean),
-    h2hSchedule: remaining('NYI').filter(g=>RACE_GROUP.has(g[1])).map(g=>({date:g[0],opp:g[1],ha:g[2]})),
-    pitBuffer: {pts: nyi.pts - (ST['PIT']?.pts||0), metroRank: met.indexOf('PIT')+1}
-  };
+  // ── Metro deep insights ──────────────────────────────────────────
+  const pit = ST['PIT'], car = ST[met[0]];
+  const pitGl = pit ? 82-(pit.wins+pit.losses+pit.otl) : 0;
+  const pitMax = pit ? pit.pts + pitGl*2 : 0;
+  const gapOverPit = pit ? nyi.pts - pit.pts : 0;
+  const h2hVsPit = h2h.filter(g=>g[1]==='PIT').length;
+  const nyiMax = nyi.pts + nyiGl*2;
+  const carPts = car ? car.pts : 0;
+  const gapToCar = carPts - nyi.pts;
 
-  const prompt = `You are an NHL analytics expert analyzing the New York Islanders' playoff race with ${data.asOf} standings.
+  const metroDeep = [];
 
-Here is the current race data as JSON:
-${JSON.stringify(data, null, 2)}
+  // Metro #2 security
+  if (pit) {
+    if (pitMax < nyi.pts) {
+      metroDeep.push(`NYI has <strong>mathematically secured Metro #2</strong> — PIT cannot catch them even with a perfect run.`);
+    } else if (gapOverPit <= 2) {
+      metroDeep.push(`Metro #2 is <strong>not secure</strong> — PIT is only <strong>${gapOverPit}pt${gapOverPit!==1?'s':''} back</strong> with ${pitGl} games left (max ${pitMax}pts).${h2hVsPit ? ` NYI faces PIT directly ${h2hVsPit}x — those games decide it.` : ' No H2H vs PIT remaining.'}`);
+    } else {
+      metroDeep.push(`NYI leads Metro #2 over PIT by <strong>${gapOverPit}pts</strong> (PIT max: ${pitMax}pts). A ${Math.max(1,Math.floor(gapOverPit/2))}-pt cushion is realistic to maintain.`);
+    }
+  }
 
-Generate exactly 4 sections of insights as a JSON object with these keys:
-- metro_observations: array of 2-3 short insight strings about NYI's Metro position (holding Metro #2 over PIT, can they catch CAR, H2H leverage)
-- metro_deep: array of 3-4 deeper analytical insights about the Metro race using the schedule, SOS, pace, and convergence data
-- wc_observations: array of 2-3 short insight strings about NYI's Wild Card position
-- wc_deep: array of 3-4 deeper analytical insights about the WC race (most dangerous convergence threat, pace vs SOS mismatches, pts/game required)
+  // Can NYI catch Metro #1?
+  if (nyiMax > carPts) {
+    metroDeep.push(`Mathematically, NYI can still catch <strong>Metro #1 (${met[0]})</strong> — they trail by ${gapToCar}pts with a max of ${nyiMax}pts possible. Requires ${met[0]} to stumble significantly.`);
+  } else {
+    metroDeep.push(`${met[0]}'s Metro #1 is out of reach — NYI's max (${nyiMax}pts) falls short of ${met[0]}'s current ${carPts}pts. <strong>Metro #2 is the ceiling.</strong>`);
+  }
 
-Rules:
-- Each insight is a standalone string, 1-3 sentences max
-- Use <strong> tags to highlight key numbers and team names
-- Focus on insights a fan couldn't easily compute themselves
-- Metro goal is to finish as high as possible: Metro #2 > Metro #3 > WC1 > WC2
-- Be specific and data-driven, not generic
-- Return ONLY valid JSON, no other text`;
+  // H2H leverage
+  if (h2h.length) {
+    const pct = Math.round(h2h.length/nyiGl*100);
+    const teams = [...new Set(h2h.map(g=>g[1]))];
+    metroDeep.push(`<strong>${h2h.length} of ${nyiGl} remaining games (${pct}%)</strong> are H2H vs direct rivals (${teams.join(', ')}) — each a potential 4-pt swing. NYI controls more of their fate than raw SOS suggests.`);
+  }
 
-  ['metro-deep-cards','wc-deep-cards'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '<div class="ins-loading">Generating AI insights...</div>';
+  // Schedule-adjusted performance
+  if (nyiPp < nyiSos) {
+    const diff = (nyiSos - nyiPp).toFixed(3);
+    metroDeep.push(`NYI's pts% (<strong>${nyiPp.toFixed(3)}</strong>) is below their SOS (<strong>${nyiSos.toFixed(3)}</strong>) by ${diff} — slightly underperforming relative to opponents faced. A concern heading into a tough close.`);
+  } else {
+    const diff = (nyiPp - nyiSos).toFixed(3);
+    metroDeep.push(`NYI's pts% (<strong>${nyiPp.toFixed(3)}</strong>) exceeds their SOS (<strong>${nyiSos.toFixed(3)}</strong>) by ${diff} — outperforming schedule difficulty, a positive sign.`);
+  }
+
+  // ── WC deep insights ─────────────────────────────────────────────
+  const rivals = [...RACE_GROUP].filter(t=>t!=='NYI'&&!sortedDiv('MET').slice(0,3).includes(t));
+  const wcDeep = [];
+
+  // Most dangerous convergence threat
+  const convergers = rivals.map(t => {
+    const s = ST[t]; if (!s) return null;
+    const gapNow = nyi.pts - s.pts;
+    const gapProj = nyiProj - projPts(t);
+    return {t, gapNow, gapProj, proj: projPts(t)};
+  }).filter(Boolean).sort((a,b)=>a.gapProj-b.gapProj);
+
+  if (convergers.length) {
+    const {t, gapNow, gapProj, proj} = convergers[0];
+    const trend = gapProj < gapNow-1 ? 'closing fast' : Math.abs(gapProj-gapNow)<=1 ? 'holding steady' : 'widening';
+    wcDeep.push(`<strong>${t} is the most dangerous convergence threat</strong> — currently ${gapNow}pts back, projected final gap narrows to ${Math.max(0,gapProj)}pts. Gap is ${trend}. At current pace, ${t} finishes at ${proj}pts.`);
+  }
+
+  // Pace vs SOS mismatches
+  const mismatches = rivals.filter(t => {
+    const rank = sosRank(t), proj = projPts(t);
+    return (rank <= 8 && proj >= nyi.pts) || (rank >= 22 && proj >= nyiProj - 2);
+  });
+  mismatches.slice(0,2).forEach(t => {
+    const rank = sosRank(t), proj = projPts(t);
+    const pp = ptsPct(t).toFixed(3);
+    if (rank <= 8) {
+      wcDeep.push(`<strong>${t}'s ${proj}pt projection is the hardest to sustain</strong> — they face the #${rank} hardest remaining schedule. Their pts% (${pp}) will likely compress under that pressure.`);
+    } else {
+      wcDeep.push(`<strong>${t}'s ${proj}pt projection may be inflated</strong> — they have the #${rank} easiest schedule remaining, meaning their pace reflects softer competition.`);
+    }
   });
 
-  try {
-    const resp = await fetch('/api/insights', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ prompt: prompt })
-    });
-    if (!resp.ok) throw new Error('HTTP '+resp.status);
-    const env = await resp.json();
-    let text = '';
-    for (const block of (env.content||[])) {
-      if (block.type==='text') { text = block.text.trim(); break; }
-    }
-    // Strip fences
-    const fence = text.indexOf('{');
-    const fenceEnd = text.lastIndexOf('}');
-    if (fence !== -1 && fenceEnd > fence) text = text.slice(fence, fenceEnd+1);
-
-    const insights = JSON.parse(text);
-
-    function renderInsights(cards, containerId) {
-      const el = document.getElementById(containerId);
-      if (!el) return;
-      el.innerHTML = (cards||[]).map(ins =>
-        `<div class="ins-card ins-deep"><p class="ins-txt">${ins}</p></div>`
-      ).join('') || '<div class="ins-loading">No insights generated</div>';
-    }
-
-    renderInsights(insights.metro_deep, 'metro-deep-cards');
-    renderInsights(insights.wc_deep, 'wc-deep-cards');
-
-    // Also update observations if present
-    if (insights.metro_observations) {
-      document.getElementById('metro-obs-cards').innerHTML =
-        insights.metro_observations.map(ins=>
-          `<div class="ins-card"><p class="ins-txt">${ins}</p></div>`
-        ).join('');
-    }
-    if (insights.wc_observations) {
-      document.getElementById('wc-obs-cards').innerHTML =
-        insights.wc_observations.map(ins=>
-          `<div class="ins-card"><p class="ins-txt">${ins}</p></div>`
-        ).join('');
-    }
-
-  } catch(e) {
-    console.warn('AI insights error:', e);
-    ['metro-deep-cards','wc-deep-cards'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = '<div class="ins-loading">AI insights unavailable — refresh to retry</div>';
-    });
+  // Mathematical elimination
+  const dead = rivals.filter(t => {
+    const s = ST[t]; if (!s) return false;
+    return s.pts + (82-(s.wins+s.losses+s.otl))*2 < nyi.pts;
+  });
+  if (dead.length) {
+    wcDeep.push(`<strong>Effectively eliminated from catching NYI:</strong> ${dead.join(', ')} — their maximum possible points fall short of NYI's current total.`);
+  } else {
+    wcDeep.push(`No rival is mathematically eliminated yet — <strong>every team in the race group can still catch NYI</strong>. Every game matters.`);
   }
+
+  // Pts/game required
+  const wc2 = wcp[2];
+  if (wc2 && nyiGl) {
+    const need = projPts(wc2)+1;
+    const diff = need - nyi.pts;
+    const ppg = (diff/nyiGl).toFixed(2);
+    const curPpg = (nyi.pts/(nyi.wins+nyi.losses+nyi.otl)).toFixed(2);
+    if (diff > 0) {
+      wcDeep.push(`To clinch WC2 (~${need}pts), NYI needs <strong>${ppg}pts/game</strong> over ${nyiGl} remaining games. Current pace: ${curPpg}pts/game — ${parseFloat(curPpg)>=parseFloat(ppg)?'<strong>on track</strong>.':'<strong>below the required rate</strong>.'}`);
+    }
+  }
+
+  // Render
+  function renderCards(cards, containerId) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = cards.map(ins =>
+      `<div class="ins-card ins-deep"><p class="ins-txt">${ins}</p></div>`
+    ).join('') || '<div class="ins-loading">No insights available</div>';
+  }
+
+  renderCards(metroDeep, 'metro-deep-cards');
+  renderCards(wcDeep, 'wc-deep-cards');
 }
+
 
 // ═══════════════════════════════════════════════════════════════════
 // SCORES
