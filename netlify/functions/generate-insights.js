@@ -63,7 +63,7 @@ exports.handler = async (event) => {
     if (scRes.status !== 200) throw new Error('Scores fetch failed: ' + scRes.status);
     const scData = JSON.parse(scRes.body);
 
-    // 2. Build current game state snapshot for race group games
+    // 2. Build current game state snapshot for push group games
     // Key: gameId, Value: { away, home, state, awayScore, homeScore }
     const currentSnapshot = {};
     const finishedGames = [];
@@ -99,7 +99,7 @@ exports.handler = async (event) => {
     } catch(e) { /* no existing insights */ }
 
     // 4. Detect games that newly transitioned to finished since last run
-    // A meaningful trigger = a race group game flipped from non-final to final
+    // A meaningful trigger = a push group game flipped from non-final to final
     const newlyFinished = [];
     Object.entries(currentSnapshot).forEach(([gameId, curr]) => {
       const prev = previousSnapshot[gameId];
@@ -118,7 +118,7 @@ exports.handler = async (event) => {
 
     // 6. Decide whether to generate new insights
     const shouldGenerate =
-      newlyFinished.length > 0 ||        // A race group game just finished
+      newlyFinished.length > 0 ||        // A push group game just finished
       insightsAge === Infinity ||          // No insights ever generated
       insightsAge > 24 * 60;              // Fallback: regenerate daily even if no games
 
@@ -178,15 +178,15 @@ exports.handler = async (event) => {
     const recentStr = newlyFinished.length
       ? `\nGames that just finished:\n${newlyFinished.join('\n')}`
       : finishedGames.length
-      ? `\nToday's completed race group games:\n${finishedGames.join('\n')}`
-      : '\nNo race group games today.';
+      ? `\nToday's completed push group games:\n${finishedGames.join('\n')}`
+      : '\nNo push group games today.';
 
     const gamesLeft = 82 - nyi.gp;
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
-    const prompt = `You are AI Butchie Bot, the AI analyst for the NYI Castaways Playoff Race Hub — a sharp, honest hockey analyst who's also a die-hard Islanders fan. You write like a beat writer with a supercomputer: specific, opinionated, and willing to say uncomfortable things when the numbers demand it.
+    const prompt = `You are AI Butchie Bot, the AI analyst for the NYI Castaways Playoff Push — a sharp, honest hockey analyst who's also a die-hard Islanders fan. You write like a beat writer with a supercomputer: specific, opinionated, and willing to say uncomfortable things when the numbers demand it.
 
-RACE GROUP STANDINGS (Eastern Conference playoff bubble):
+PUSH GROUP STANDINGS (Eastern Conference playoff bubble):
 ${standingsStr}
 
 TIEBREAKER SITUATIONS (teams within 3pts of NYI):
@@ -195,16 +195,28 @@ ${recentStr}
 
 NYI has ${gamesLeft} games remaining. Season ends April 16, 2026.
 
-Your job: write 3-4 distinct analytical insights about the Islanders' playoff situation. Each insight must:
-- Synthesize multiple data points to surface something non-obvious
-- Be specific — use real numbers, team names, and trends
-- Sound like a sharp analyst, not a data dump
-- Be honest — if NYI is in trouble, say so clearly
-- Be 2-3 sentences max
-- Avoid generic statements like "every game matters" or "the race is tight"
+Generate TWO separate sets of insights as a JSON object with exactly these two keys:
 
-Respond ONLY with a valid JSON array of strings. No preamble, no markdown, no explanation.
-Example: ["First insight here.", "Second insight here.", "Third insight here."]`;
+"metro": 3-4 insights FOCUSED EXCLUSIVELY on NYI's Metropolitan Division finish.
+- Is Metro #2 secure vs PIT? Can NYI catch Metro #1 (CAR)? What does Metro #3 mean vs Metro #2?
+- Reference PIT's RW/ROW tiebreaker situation vs NYI specifically
+- What H2H games remain that affect the Metro seeding?
+- Be specific about what Metro #2 vs #3 means for playoff seeding and first-round matchup
+
+"wildcard": 3-4 insights FOCUSED EXCLUSIVELY on the Wild Card picture.
+- Which teams are threatening WC1 and WC2 from outside the top 3?
+- BOS likely locks WC1 — what does that mean for WC2 competition?
+- Which bubble teams (OTT, DET, PHI) are most dangerous and why?
+- What pace does NYI need to hold WC2 or better?
+
+Rules for ALL insights:
+- Each insight is a standalone string, 2-3 sentences max
+- Use specific numbers, team names, trends — no generic statements
+- Be honest — if NYI is vulnerable, say so
+- Avoid "every game matters" or "the race is tight"
+
+Respond ONLY with valid JSON in this exact format. No preamble, no markdown:
+{"metro": ["insight 1", "insight 2", "insight 3"], "wildcard": ["insight 1", "insight 2", "insight 3"]}`;
 
     // 9. Call OpenAI
     const apiKey = process.env.OPENAI_API_KEY;
@@ -227,22 +239,28 @@ Example: ["First insight here.", "Second insight here.", "Third insight here."]`
     const content = aiData.choices?.[0]?.message?.content || '';
     console.log('OpenAI response:', content.slice(0, 200));
 
-    // Parse JSON array
-    let insights = [];
+    // Parse JSON object with metro and wildcard keys
+    let metroInsights = [], wildcardInsights = [];
     try {
       const cleaned = content.replace(/```json|```/g, '').trim();
-      insights = JSON.parse(cleaned);
-      if (!Array.isArray(insights)) throw new Error('Not array');
+      const parsed = JSON.parse(cleaned);
+      if (parsed.metro && Array.isArray(parsed.metro)) metroInsights = parsed.metro;
+      if (parsed.wildcard && Array.isArray(parsed.wildcard)) wildcardInsights = parsed.wildcard;
+      if (!metroInsights.length && !wildcardInsights.length) throw new Error('No insights parsed');
     } catch(e) {
-      // Fallback: split by newline
-      insights = content.split('\n')
+      console.error('Parse error:', e.message);
+      const lines = content.split('\n')
         .map(l => l.replace(/^[\d\-\.\*\s"]+/, '').replace(/"[\,]?$/, '').trim())
         .filter(l => l.length > 30);
+      metroInsights = lines.slice(0, Math.ceil(lines.length/2));
+      wildcardInsights = lines.slice(Math.ceil(lines.length/2));
     }
 
     // 10. Store insights
     const payload = {
-      insights,
+      metro: metroInsights,
+      wildcard: wildcardInsights,
+      insights: [...metroInsights, ...wildcardInsights],
       generatedAt: new Date().toISOString(),
       triggers: newlyFinished,
       nyiPts: nyi.pts,
@@ -251,10 +269,10 @@ Example: ["First insight here.", "Second insight here.", "Third insight here."]`
 
     await store.setJSON('nyi-insights', payload);
 
-    console.log('generate-insights: stored', insights.length, 'insights');
+    console.log('generate-insights: stored', metroInsights.length, 'metro +', wildcardInsights.length, 'wildcard insights');
     return {
       statusCode: 200,
-      body: JSON.stringify({ ok: true, count: insights.length, triggers: newlyFinished })
+      body: JSON.stringify({ ok: true, metro: metroInsights.length, wildcard: wildcardInsights.length, triggers: newlyFinished })
     };
 
   } catch(e) {
