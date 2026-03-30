@@ -4,71 +4,54 @@ function fetchUrl(url) {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; NYIBot/1.0)',
+        'User-Agent': 'Mozilla/5.0',
         'Accept': 'application/json'
       }
     }, (res) => {
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        console.log(`Fetched ${url} -> status ${res.statusCode}, bytes ${data.length}`);
-        resolve({ status: res.statusCode, body: data });
-      });
+      res.on('end', () => resolve({ status: res.statusCode, body: data, ok: true }));
     });
-    req.on('error', (e) => {
-      console.error(`Fetch error for ${url}:`, e.message);
-      reject(e);
-    });
-    req.setTimeout(10000, () => {
-      req.destroy();
-      reject(new Error('Request timeout'));
-    });
+    req.on('error', (e) => resolve({ status: 0, body: '', ok: false, error: e.message }));
+    req.setTimeout(8000, () => { req.destroy(); resolve({ status: 0, body: '', ok: false, error: 'timeout' }); });
   });
 }
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
   'Content-Type': 'application/json'
 };
 
-exports.handler = async (event, context) => {
-  console.log('Event:', JSON.stringify({
-    path: event.path,
-    method: event.httpMethod,
-    params: event.queryStringParameters
-  }));
+exports.handler = async (event) => {
+  const type = (event.queryStringParameters || {}).type || 'test';
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: CORS, body: '' };
+  if (type === 'test') {
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true, message: 'Function running' }) };
   }
 
-  const params = event.queryStringParameters || {};
-  const type = params.type || event.path.split('/').pop() || 'unknown';
-  console.log('Resolved type:', type);
+  const urls = {
+    standings: 'https://api-web.nhle.com/v1/standings/now',
+    scores:    'https://api-web.nhle.com/v1/score/now'
+  };
 
-  try {
-    if (type === 'standings') {
-      const r = await fetchUrl('https://api-web.nhle.com/v1/standings/now');
-      return { statusCode: 200, headers: CORS, body: r.body };
-    }
-    if (type === 'scores') {
-      const r = await fetchUrl('https://api-web.nhle.com/v1/score/now');
-      return { statusCode: 200, headers: CORS, body: r.body };
-    }
-    // Default test response
+  const url = urls[type];
+  if (!url) return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Unknown type: ' + type }) };
+
+  const result = await fetchUrl(url);
+
+  if (!result.ok || result.status !== 200) {
     return {
       statusCode: 200,
       headers: CORS,
-      body: JSON.stringify({ ok: true, type, message: 'Function is running' })
-    };
-  } catch (e) {
-    console.error('Handler error:', e.message);
-    return {
-      statusCode: 500,
-      headers: CORS,
-      body: JSON.stringify({ error: e.message, type })
+      body: JSON.stringify({
+        error: result.error || 'Fetch failed',
+        status: result.status,
+        url,
+        type
+      })
     };
   }
+
+  // Return raw NHL API response
+  return { statusCode: 200, headers: CORS, body: result.body };
 };
