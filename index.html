@@ -183,6 +183,10 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
 .hide-mobile{display:table-cell}
 @media(max-width:640px){
   .hide-mobile{display:none!important}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th,td{padding:4px 4px;font-size:.68rem}
+  .t-nm{font-size:.8rem}
+  .pos-badge{font-size:.58rem;padding:1px 4px}
   .main{padding:10px}
   th,td{padding:5px 4px;font-size:.69rem}
   .fc-grid{grid-template-columns:1fr}
@@ -958,6 +962,9 @@ function renderRace() {
       <td class="num muted">${gl}</td>
       <td class="num muted">#${rawRank}</td>
       <td class="num muted">#${rank}${adjFlag}</td>
+      <td class="num diff-col" style="color:${s.diff>0?'#4ade80':s.diff<0?'#f87171':'var(--muted)'}">${s.diff>0?'+':''}${s.diff}</td>
+      <td class="num hide-mobile" style="font-size:.7rem">${s.l10w}-${s.l10l}-${s.l10otl}</td>
+      <td class="num stk-col" style="color:${s.streak&&s.streak[0]==='W'?'#4ade80':s.streak&&s.streak[0]==='L'?'#f87171':'#94a3b8'}">${s.streak||'—'}</td>
       <td class="num proj-col">${proj}</td>
     </tr>
     <tr class="tr-chips" id="${uid}" style="display:none">
