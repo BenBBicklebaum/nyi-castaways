@@ -278,7 +278,7 @@ CRITICAL: Your entire response must be valid JSON only. No text before or after 
       'https://api.openai.com/v1/chat/completions',
       {
         model: 'gpt-4o-mini',
-        max_tokens: 800,
+        max_tokens: 1200,
         temperature: 0.75,
         messages: [{ role: 'user', content: prompt }]
       },
@@ -291,25 +291,35 @@ CRITICAL: Your entire response must be valid JSON only. No text before or after 
     const content = aiData.choices?.[0]?.message?.content || '';
     console.log('OpenAI response:', content.slice(0, 200));
 
-    // Parse JSON — extract first { ... } block to handle any preamble
+    // Parse JSON robustly
     let metroInsights = [], wildcardInsights = [];
     try {
-      const start = content.indexOf('{');
-      const end   = content.lastIndexOf('}');
-      if (start === -1 || end === -1) throw new Error('No JSON object found');
-      const cleaned = content.slice(start, end + 1);
-      const parsed = JSON.parse(cleaned);
+      // Try 1: parse the full content directly
+      let parsed = null;
+      try {
+        parsed = JSON.parse(content.trim());
+      } catch(e1) {
+        // Try 2: extract { ... } block
+        const start = content.indexOf('{');
+        // Find the matching closing brace by counting
+        let depth = 0, end = -1;
+        for (let i = start; i < content.length; i++) {
+          if (content[i] === '{') depth++;
+          else if (content[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+        }
+        if (start === -1 || end === -1) throw new Error('No complete JSON object found');
+        parsed = JSON.parse(content.slice(start, end + 1));
+      }
       if (parsed.metro && Array.isArray(parsed.metro)) {
         metroInsights = parsed.metro.filter(s => typeof s === 'string' && s.length > 10).slice(0, 3);
       }
       if (parsed.wildcard && Array.isArray(parsed.wildcard)) {
         wildcardInsights = parsed.wildcard.filter(s => typeof s === 'string' && s.length > 10).slice(0, 3);
       }
-      if (!metroInsights.length && !wildcardInsights.length) throw new Error('Arrays empty after parse');
+      if (!metroInsights.length && !wildcardInsights.length) throw new Error('Both arrays empty');
       console.log('generate-insights: parsed', metroInsights.length, 'metro,', wildcardInsights.length, 'wildcard');
     } catch(e) {
-      console.error('Parse error:', e.message, '| Raw content sample:', content.slice(0, 300));
-      // Hard fallback — return error state, don't store garbage
+      console.error('Parse error:', e.message, '| content length:', content.length, '| sample:', content.slice(0, 200));
       return { statusCode: 500, body: JSON.stringify({ error: 'JSON parse failed: ' + e.message }) };
     }
 
