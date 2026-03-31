@@ -156,7 +156,7 @@ exports.handler = async (event, context) => {
     const shouldGenerate =
       newlyFinished.length > 0 ||        // A push group game just finished
       insightsAge === Infinity ||          // No insights ever generated
-      insightsAge > 24 * 60;              // Fallback: regenerate daily even if no games
+      insightsAge > 6 * 60;              // Fallback: regenerate daily even if no games
 
     if (!shouldGenerate) {
       console.log(`Skipping — no newly finished games, insights ${Math.round(insightsAge)}min old`);
@@ -253,14 +253,7 @@ NYI has ${gamesLeft} games remaining. Season ends April 16, 2026.
 
 Generate TWO insight sets. Each insight must reveal something NON-OBVIOUS — something that requires math, schedule analysis, or tiebreaker logic to surface. NEVER state things visible at a glance (e.g. "PIT is ahead of NYI" or "CAR has clinched"). Every sentence must contain a specific number, date, or calculated finding.
 
-"metro": 3-4 insights about NYI's Metro Division finish. Focus on:
-- The EXACT tiebreaker chain between NYI and PIT: who leads in RW, ROW, and what H2H games remain and when. What specific result flips the tiebreaker?
-- NYI's pts/game pace needed over remaining ${gamesLeft} games to finish Metro #2 vs Metro #3
-- Which specific upcoming games are highest leverage for seeding (H2H vs rivals, tough opponents)
-- What Metro #2 vs #3 actually means: who NYI faces in Round 1 (CAR division winner vs Atlantic winner)
-- Schedule convergence: if NYI and PIT both go X-Y down the stretch, who ends up where?
-
-"wildcard": 3-4 insights about the WC picture. Focus on:
+"metro": 3-4 insights about NYI's Metro Division finish. Focus on:\n- Use the TIEBREAKER SITUATIONS data above — state exactly who leads RW now AND who projects to lead RW at season end\n- NHL tiebreaker order when pts tied: 1) pts% if unequal GP, 2) RW (regulation wins only, no OT/SO), 3) ROW, 4) W, 5) H2H pts\n- If NYI and PIT finish tied on pts: who wins the tiebreaker based on current AND projected RW? What specific result in remaining H2H changes this?\n- What pts/game pace does NYI need over ${gamesLeft} games to reclaim Metro #2 vs PIT?\n- What Metro #2 vs #3 actually means for Round 1 (different first-round opponent)\n\n"wildcard": 3-4 insights about the WC picture. Focus on:
 - The specific pts/game rate NYI needs to hold off OTT, DET, PHI — calculated from current gaps and games remaining
 - Which bubble team has the most favorable remaining schedule (lowest ADJ SOS) and by how much
 - Scenario analysis: what happens to NYI's WC seed if they go 4-3 vs 3-4 vs 2-5 the rest of the way
