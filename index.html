@@ -878,7 +878,7 @@ function renderEast() {
     const ptsCls=s.pts>=93?'hot':s.pts>=85?'mid':s.pts<80?'cold':'';
     const rowCls=(t==='NYI'?'tr-nyi':'')+(isOut?' tr-out':'');
     rows.push(`<tr class="${rowCls}">
-      <td class="num muted">${rank}</td>
+      <td class="num muted rank-col">${rank}</td>
       <td><span class="t-nm" style="color:${col}">${t}</span></td>
       <td><span class="pos-badge ${posCls}">${posLbl}</span></td>
       <td class="num">${gp}</td>
@@ -1275,8 +1275,12 @@ let _scoreTimer=null;
 let _scoreOffset=0;
 
 function _offsetToDate(offset){
-  const d=new Date(); d.setDate(d.getDate()+offset);
-  return d.toISOString().slice(0,10);
+  // Use Eastern time (UTC-4 EDT / UTC-5 EST) to match NHL schedule dates
+  const now=new Date();
+  const etOffset = now.toLocaleString('en-US',{timeZone:'America/New_York',timeZoneName:'short'}).includes('EDT') ? -4 : -5;
+  const et=new Date(now.getTime() + etOffset*60*60*1000 + now.getTimezoneOffset()*60*1000);
+  et.setDate(et.getDate()+offset);
+  return et.toISOString().slice(0,10);
 }
 function _dateLabel(offset){
   if(offset===0) return 'Today';
