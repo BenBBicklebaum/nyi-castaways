@@ -1308,8 +1308,11 @@ async function renderDeepInsights(){
   try {
     const r = await fetch('/.netlify/functions/nhl?type=insights');
     const d = await r.json();
-    const insights = d.insights || [];
-    const genAt = d.generatedAt;
+    // Use metro/wildcard arrays; fall back to combined insights
+    const metroArr = d.metro && Array.isArray(d.metro) && d.metro.length ? d.metro : [];
+    const wcArr    = d.wildcard && Array.isArray(d.wildcard) && d.wildcard.length ? d.wildcard : [];
+    const insights = [...metroArr, ...wcArr];
+    const genAt    = d.generatedAt;
 
     if (!insights.length) {
       cardsEl.innerHTML = '<div class="ins-loading">AI Butchie Bot hasn\'t weighed in yet — check back after the next game.</div>';
@@ -1329,15 +1332,13 @@ async function renderDeepInsights(){
       ).join('') || '<div class="ins-loading">No insights available.</div>';
     }
 
-    // Metro: use d.metro if available, fallback to combined insights
-    const metroArr = (d.metro && d.metro.length) ? d.metro : insights;
-    cardsEl.innerHTML = butchieCards(metroArr);
+    // Metro section
+    cardsEl.innerHTML = butchieCards(metroArr.length ? metroArr : insights);
 
-    // Wild Card: use d.wildcard if available, fallback to combined insights
+    // Wild Card section
     const wcCards = document.getElementById('wc-butchie-cards');
     if (wcCards) {
-      const wcArr = (d.wildcard && d.wildcard.length) ? d.wildcard : insights;
-      wcCards.innerHTML = butchieCards(wcArr);
+      wcCards.innerHTML = butchieCards(wcArr.length ? wcArr : insights);
     }
 
     // Timestamp + disclaimer on both
@@ -1559,6 +1560,27 @@ async function _fetchScores(){
     if(ts) ts.textContent='Scores unavailable — refresh to retry';
   }
 }
+
+// ── Column header click tooltips ──────────────────────────────
+(function(){
+  document.addEventListener('click', function(e){
+    const th=e.target.closest('th[title]');
+    if(!th) return;
+    const title=th.getAttribute('title');
+    if(!title) return;
+    e.stopPropagation();
+    const tip=document.getElementById('clinch-tooltip');
+    const ov=document.getElementById('clinch-overlay');
+    if(!tip||!ov) return;
+    tip.innerHTML='<strong style="font-size:.85rem">'+th.textContent.trim()+'</strong><div style="margin-top:6px;font-weight:400;font-size:.76rem;line-height:1.5">'+title+'</div>';
+    const rect=th.getBoundingClientRect();
+    const left=Math.max(8,Math.min(rect.left,window.innerWidth-300));
+    let top=rect.bottom+6;
+    if(top+120>window.innerHeight) top=Math.max(8,rect.top-130);
+    tip.style.left=left+'px'; tip.style.top=top+'px'; tip.style.display='block';
+    ov.classList.add('show');
+  });
+})();
 
 function _attachTip(){
   const tip=document.getElementById('sc-tooltip');
