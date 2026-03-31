@@ -259,14 +259,14 @@ METRO insights (exactly 3, about NYI's Metro Division finish):
 - Focus on specific upcoming H2H games that affect seeding
 - DO NOT state things visible at a glance (e.g. "PIT is ahead")
 - Every insight must contain a specific number calculated from the data
-- Max 2 sentences per insight
+- Max 2 sentences per insight. Each sentence max 20 words.
 
 WILDCARD insights (exactly 3, about holding a playoff spot):
 - Focus on specific pts/game rates NYI needs to hold off OTT/DET/PHI
 - Focus on which bubble team has the most favorable schedule and by how much
 - Focus on rival-vs-rival matchups that help NYI
 - DO NOT state the obvious — every insight must reveal something non-obvious
-- Max 2 sentences per insight
+- Max 2 sentences per insight. Each sentence max 20 words.
 
 CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
 
@@ -278,7 +278,7 @@ CRITICAL: Your entire response must be valid JSON only. No text before or after 
       'https://api.openai.com/v1/chat/completions',
       {
         model: 'gpt-4o-mini',
-        max_tokens: 3000,
+        max_tokens: 800,
         temperature: 0.75,
         messages: [{ role: 'user', content: prompt }]
       },
