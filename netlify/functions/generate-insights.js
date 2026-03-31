@@ -153,10 +153,9 @@ exports.handler = async (event, context) => {
     await store.setJSON('game-snapshot', currentSnapshot);
 
     // 6. Decide whether to generate new insights
-    const shouldGenerate =
-      newlyFinished.length > 0 ||        // A push group game just finished
-      insightsAge === Infinity ||          // No insights ever generated
-      insightsAge > 6 * 60;              // Fallback: regenerate daily even if no games
+    // Always regenerate — cron runs hourly so this is fine
+    // Manual runs from UI should always produce fresh insights
+    const shouldGenerate = true;        // Fallback: regenerate daily even if no games
 
     if (!shouldGenerate) {
       console.log(`Skipping — no newly finished games, insights ${Math.round(insightsAge)}min old`);
