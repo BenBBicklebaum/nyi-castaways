@@ -240,35 +240,36 @@ exports.handler = async (event, context) => {
     const gamesLeft = 82 - nyi.gp;
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
-    const prompt = `You are AI Butchie Bot — a sharp NHL analyst and die-hard Islanders fan who writes like a beat reporter with a supercomputer. You surface non-obvious findings that require synthesizing multiple data points. You never state things a fan can see by glancing at the standings.
+    const prompt = `You are AI Butchie Bot — a sharp NHL analyst. Return ONLY a JSON object, nothing else.
 
-CURRENT PUSH GROUP STANDINGS:
+STANDINGS DATA:
 ${standingsStr}
 
-TIEBREAKER SITUATIONS:
-${tbLines.length ? tbLines.join('\n') : 'No close tiebreaker situations currently'}
+TIEBREAKER SITUATIONS (teams within 5pts of NYI):
+${tbLines.length ? tbLines.join('\n') : 'None'}
 ${recentStr}${mtlContext}
 
-NYI has ${gamesLeft} games remaining. Season ends April 16, 2026.
+NYI has ${gamesLeft} games left. Season ends April 16, 2026.
 
-Generate TWO insight sets. Each insight must reveal something NON-OBVIOUS — something that requires math, schedule analysis, or tiebreaker logic to surface. NEVER state things visible at a glance (e.g. "PIT is ahead of NYI" or "CAR has clinched"). Every sentence must contain a specific number, date, or calculated finding.
+Return this exact JSON structure with NO other text, NO markdown, NO explanation:
+{"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
-"metro": 3-4 insights about NYI's Metro Division finish. Focus on:\n- Use the TIEBREAKER SITUATIONS data above — state exactly who leads RW now AND who projects to lead RW at season end\n- NHL tiebreaker order when pts tied: 1) pts% if unequal GP, 2) RW (regulation wins only, no OT/SO), 3) ROW, 4) W, 5) H2H pts\n- If NYI and PIT finish tied on pts: who wins the tiebreaker based on current AND projected RW? What specific result in remaining H2H changes this?\n- What pts/game pace does NYI need over ${gamesLeft} games to reclaim Metro #2 vs PIT?\n- What Metro #2 vs #3 actually means for Round 1 (different first-round opponent)\n\n"wildcard": 3-4 insights about the WC picture. Focus on:
-- The specific pts/game rate NYI needs to hold off OTT, DET, PHI — calculated from current gaps and games remaining
-- Which bubble team has the most favorable remaining schedule (lowest ADJ SOS) and by how much
-- Scenario analysis: what happens to NYI's WC seed if they go 4-3 vs 3-4 vs 2-5 the rest of the way
-- Which specific upcoming bubble-vs-bubble games NYI should root for/against and exactly why (pts impact)
-- If BOS catches MTL: what does MTL entering WC do to the math numerically?
+METRO insights (exactly 3, about NYI's Metro Division finish):
+- Focus on tiebreaker math vs PIT using the RW/ROW data above — who leads now and projected
+- Focus on pts/game pace NYI needs to reclaim Metro #2
+- Focus on specific upcoming H2H games that affect seeding
+- DO NOT state things visible at a glance (e.g. "PIT is ahead")
+- Every insight must contain a specific number calculated from the data
+- Max 2 sentences per insight
 
-Rules:
-- Each insight: 2-3 sentences, standalone
-- Every sentence must include at least one specific number (pts, RW count, date, pace, probability)
-- Never say anything observable without calculation
-- If NYI is in trouble, say exactly how much trouble and why
-- No hedging phrases like "could be" or "might" — commit to the math
+WILDCARD insights (exactly 3, about holding a playoff spot):
+- Focus on specific pts/game rates NYI needs to hold off OTT/DET/PHI
+- Focus on which bubble team has the most favorable schedule and by how much
+- Focus on rival-vs-rival matchups that help NYI
+- DO NOT state the obvious — every insight must reveal something non-obvious
+- Max 2 sentences per insight
 
-Respond ONLY with valid JSON, no markdown:
-{"metro": ["insight 1", "insight 2", "insight 3", "insight 4"], "wildcard": ["insight 1", "insight 2", "insight 3", "insight 4"]}`;
+CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
 
     // 9. Call OpenAI
     const apiKey = process.env.OPENAI_API_KEY;
@@ -291,21 +292,26 @@ Respond ONLY with valid JSON, no markdown:
     const content = aiData.choices?.[0]?.message?.content || '';
     console.log('OpenAI response:', content.slice(0, 200));
 
-    // Parse JSON object with metro and wildcard keys
+    // Parse JSON — extract first { ... } block to handle any preamble
     let metroInsights = [], wildcardInsights = [];
     try {
-      const cleaned = content.replace(/```json|```/g, '').trim();
+      const start = content.indexOf('{');
+      const end   = content.lastIndexOf('}');
+      if (start === -1 || end === -1) throw new Error('No JSON object found');
+      const cleaned = content.slice(start, end + 1);
       const parsed = JSON.parse(cleaned);
-      if (parsed.metro && Array.isArray(parsed.metro)) metroInsights = parsed.metro;
-      if (parsed.wildcard && Array.isArray(parsed.wildcard)) wildcardInsights = parsed.wildcard;
-      if (!metroInsights.length && !wildcardInsights.length) throw new Error('No insights parsed');
+      if (parsed.metro && Array.isArray(parsed.metro)) {
+        metroInsights = parsed.metro.filter(s => typeof s === 'string' && s.length > 10).slice(0, 3);
+      }
+      if (parsed.wildcard && Array.isArray(parsed.wildcard)) {
+        wildcardInsights = parsed.wildcard.filter(s => typeof s === 'string' && s.length > 10).slice(0, 3);
+      }
+      if (!metroInsights.length && !wildcardInsights.length) throw new Error('Arrays empty after parse');
+      console.log('generate-insights: parsed', metroInsights.length, 'metro,', wildcardInsights.length, 'wildcard');
     } catch(e) {
-      console.error('Parse error:', e.message);
-      const lines = content.split('\n')
-        .map(l => l.replace(/^[\d\-\.\*\s"]+/, '').replace(/"[\,]?$/, '').trim())
-        .filter(l => l.length > 30);
-      metroInsights = lines.slice(0, Math.ceil(lines.length/2));
-      wildcardInsights = lines.slice(Math.ceil(lines.length/2));
+      console.error('Parse error:', e.message, '| Raw content sample:', content.slice(0, 300));
+      // Hard fallback — return error state, don't store garbage
+      return { statusCode: 500, body: JSON.stringify({ error: 'JSON parse failed: ' + e.message }) };
     }
 
     // 10. Store insights
