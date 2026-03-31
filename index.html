@@ -132,6 +132,7 @@ th.row-col{color:#86efac}
 .cc-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:16px}
 .cc{background:var(--srf);border:1px solid var(--bdr);border-radius:8px;padding:10px 12px;cursor:pointer}
 .cc-pace{border-color:var(--org)!important}
+.cc-prob{border-color:#4ade80;background:linear-gradient(135deg,rgba(74,222,128,.05),var(--srf))}
 .cc-lbl{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
 .cc-val{font-family:'Barlow Condensed',sans-serif;font-size:1.4rem;font-weight:900;color:var(--txt)}
 .cc-badge{display:inline-block;font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:4px;margin-top:5px;letter-spacing:.04em}
@@ -1004,6 +1005,51 @@ function renderRace() {
 // ═══════════════════════════════════════════════════════════════
 // CLINCH TRACKER
 // ═══════════════════════════════════════════════════════════════
+function playoffProb(){
+  // Uses same cutline logic as clinch tracker — projPts of first team outside each spot
+  const nyi=ST['NYI']; if(!nyi) return 50;
+  const wcp=wcPool(), met=sortedDiv('MET');
+  const nyiGp=nyi.wins+nyi.losses+nyi.otl, nyiGl=82-nyiGp;
+  const nyiProj=projPts('NYI');
+
+  // Cutlines — same as clinch tracker
+  const wc2Cut  = wcp[2] ? projPts(wcp[2])+1 : null;   // need to beat WC #3
+  const met3Cut = met[3] ? projPts(met[3])+1 : null;   // need to beat Metro #4
+
+  // Best cutline NYI needs to beat (whichever is lower = easier to reach)
+  const bestCut = Math.min(
+    wc2Cut  !== null ? wc2Cut  : 999,
+    met3Cut !== null ? met3Cut : 999
+  );
+  if(bestCut === 999) return 99; // no competition
+
+  const gap = nyiProj - bestCut; // positive = NYI on pace, negative = behind
+
+  // Map gap to probability
+  let prob;
+  if(gap >= 10) prob = 98;
+  else if(gap >= 7) prob = 95;
+  else if(gap >= 5) prob = 90;
+  else if(gap >= 3) prob = 82;
+  else if(gap >= 1) prob = 70;
+  else if(gap === 0) prob = 55;
+  else if(gap >= -2) prob = 40;
+  else if(gap >= -4) prob = 27;
+  else if(gap >= -6) prob = 15;
+  else prob = 7;
+
+  // SOS adjustment
+  const rank=sosRank('NYI');
+  if(rank<=3) prob=Math.max(4,prob-6);
+  else if(rank<=8) prob=Math.max(4,prob-3);
+  else if(rank>=24) prob=Math.min(99,prob+3);
+
+  // Fewer games = more certainty either way
+  if(nyiGl<=3) prob=prob>50?Math.min(99,prob+8):Math.max(2,prob-8);
+
+  return Math.round(Math.min(99,Math.max(1,prob)));
+}
+
 function renderClinch(){
   const row=document.getElementById('cc-row');
   if(!row||!ST['NYI']) return;
@@ -1050,7 +1096,31 @@ function renderClinch(){
   if (nyiResult.tbNote) nyiSeedNote = `<div style="font-size:.62rem;color:#fbbf24;margin-top:4px">${nyiResult.tbNote}</div>`;
   else if (nyiResult.inPlayoffs === false) nyiSeedNote = `<div style="font-size:.62rem;color:#f87171;margin-top:4px">Projected OUT on tiebreaker</div>`;
 
-  let html=`<div class="cc cc-pace">
+  const prob=playoffProb();
+  const probColor=prob>=80?'#4ade80':prob>=55?'#f59e0b':'#f87171';
+  const probLabel=prob>=90?'Looking Good':prob>=70?'On Track':prob>=50?'On The Bubble':prob>=30?'In Danger':'Critical';
+
+  // Build probability tooltip
+  const wc2Cut  = wcp[2] ? projPts(wcp[2])+1 : null;
+  const met3Cut = met[3] ? projPts(met[3])+1 : null;
+  const bestCut = Math.min(wc2Cut||999, met3Cut||999);
+  const bestCutTeam = (wc2Cut !== null && wc2Cut <= (met3Cut||999)) ? wcp[2] : met[3];
+  const gap = nyiProj - bestCut;
+  const sosRankVal = sosRank('NYI');
+  const probPopup = [
+    `NYI projects ${nyiProj}pts · cutline set by ${bestCutTeam} pace (${bestCut}pts needed)`,
+    `Projected gap: ${gap>=0?'+':''}${gap}pts vs cutline · ${nyiGl} games remaining`,
+    `SOS adjustment: NYI has #${sosRankVal} hardest remaining schedule (1=hardest)`,
+    `Probability reflects pace projection + schedule difficulty + games left`
+  ].join(' · ');
+
+  let html=`<div class="cc cc-prob" data-clinch="${probPopup.replace(/"/g,'&quot;')}" style="cursor:pointer">
+    <div class="cc-lbl">Playoff Probability <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
+    <div class="cc-val" style="color:${probColor};font-size:2rem">${prob}%</div>
+    <span class="cc-badge" style="background:${probColor}22;color:${probColor};border:1px solid ${probColor}44">${probLabel}</span>
+    <div style="font-size:.58rem;color:var(--muted);margin-top:4px">${nyiGl} games left · tap for details</div>
+  </div>
+  <div class="cc cc-pace">
     <div class="cc-lbl">NYI Projected</div>
     <div class="cc-val" style="color:var(--org)">${nyiProj} pts</div>
     <span class="cc-badge bdg-pace">${nyi.pts}pts · ${nyiGp}GP · ${nyiGl} left</span>
