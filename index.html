@@ -90,6 +90,8 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;min-width:560px}
 th{background:#071020;font-family:'Barlow Condensed',sans-serif;font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 7px;text-align:left;white-space:nowrap}
+th[title]{cursor:help;border-bottom:1px dotted rgba(255,255,255,.25)}
+th[title]:hover{color:#e2e8f0}
 td{padding:6px 7px;font-size:.76rem;border-top:1px solid var(--bdr);white-space:nowrap}
 .num{text-align:right}.muted{color:#6b8fc2}
 .t-nm{font-family:'Barlow Condensed',sans-serif;font-size:.9rem;font-weight:900}
@@ -1006,24 +1008,79 @@ function renderRace() {
 // CLINCH TRACKER
 // ═══════════════════════════════════════════════════════════════
 function playoffProb(){
-  // Uses same cutline logic as clinch tracker — projPts of first team outside each spot
   const nyi=ST['NYI']; if(!nyi) return 50;
   const wcp=wcPool(), met=sortedDiv('MET');
   const nyiGp=nyi.wins+nyi.losses+nyi.otl, nyiGl=82-nyiGp;
   const nyiProj=projPts('NYI');
 
-  // Cutlines — same as clinch tracker
-  const wc2Cut  = wcp[2] ? projPts(wcp[2])+1 : null;   // need to beat WC #3
-  const met3Cut = met[3] ? projPts(met[3])+1 : null;   // need to beat Metro #4
+  // ── PROJECTED RW ──────────────────────────────────────────────
+  // Project future RW: historically ~55% of wins come in regulation
+  // Use team's current RW/W ratio if they have enough wins, else league avg
+  function projRW(t) {
+    const s=ST[t]; if(!s) return 0;
+    const gp=s.wins+s.losses+s.otl, gl=82-gp;
+    const rwRate = s.wins>5 ? s.rw/s.wins : 0.55;
+    const expectedFutureWins = (s.wins/gp) * gl;
+    return Math.round(s.rw + expectedFutureWins * rwRate);
+  }
 
-  // Best cutline NYI needs to beat (whichever is lower = easier to reach)
-  const bestCut = Math.min(
-    wc2Cut  !== null ? wc2Cut  : 999,
-    met3Cut !== null ? met3Cut : 999
-  );
-  if(bestCut === 999) return 99; // no competition
+  // ── H2H CONSTRAINT ────────────────────────────────────────────
+  // NYI's H2H games vs each rival — rival can't get full pts from those games
+  // Expected: NYI wins ~50% based on pace, rivals win ~50%
+  // So each H2H game: rival expected to get ~1pt instead of 2
+  function h2hConstrainedProj(rival) {
+    if(!ST[rival]) return 0;
+    const s=ST[rival], gp=s.wins+s.losses+s.otl, gl=82-gp;
+    const nyiRem=remaining('NYI');
+    const h2hVsNYI=nyiRem.filter(g=>g[1]===rival).length;
+    // For H2H games: rival gets ~1pt on average (could win 2 or lose 0)
+    // For other games: full pace projection
+    const nonH2hGL=gl-h2hVsNYI;
+    const pacePerGame=gp ? s.pts/gp : 0;
+    return Math.round(s.pts + nonH2hGL*pacePerGame + h2hVsNYI*1);
+  }
 
-  const gap = nyiProj - bestCut; // positive = NYI on pace, negative = behind
+  // ── RIVAL vs RIVAL BENEFIT ────────────────────────────────────
+  // Games between two rivals = guaranteed one rival gets hurt
+  // For each rival, count how many games they play vs OTHER rivals
+  function rivalVsRivalGames(t) {
+    if(!ST[t]) return 0;
+    const gp=ST[t].wins+ST[t].losses+ST[t].otl, gl=82-gp;
+    const rem=remaining(t);
+    return rem.filter(g=>RACE_GROUP.has(g[1])&&g[1]!=='NYI').length;
+  }
+
+  // ── EFFECTIVE GAP with all factors ────────────────────────────
+  function effectiveGap(rival) {
+    if(!rival||!ST[rival]) return 999;
+
+    // Use H2H-constrained projection for rival (accounts for NYI H2H games)
+    const rivalProj=h2hConstrainedProj(rival);
+    const ptsDiff=nyiProj - rivalProj;
+
+    // Tiebreaker adjustment when pts are close
+    let tbAdj=0;
+    if(Math.abs(ptsDiff)<=1){
+      // Project future RW for both
+      const nyiProjRW=projRW('NYI'), rivalProjRW=projRW(rival);
+      if(nyiProjRW > rivalProjRW) tbAdj=0.5;   // NYI wins projected TB
+      else if(nyiProjRW < rivalProjRW) tbAdj=-0.5; // NYI loses projected TB
+    }
+
+    // Rival vs rival benefit: each rival-vs-rival game hurts that rival ~0.5pts on avg
+    const rvr=rivalVsRivalGames(rival);
+    const rvrBoost=rvr * 0.3; // each rival-vs-rival game gives NYI ~0.3pt of breathing room
+
+    return ptsDiff + tbAdj + rvrBoost;
+  }
+
+  // Best path: Metro #3 or WC2
+  const wc2Gap  = wcp[2] ? effectiveGap(wcp[2])  - 1 : 999;
+  const met3Gap = met[3] ? effectiveGap(met[3]) - 1 : 999;
+  const bestGap = Math.max(wc2Gap, met3Gap);
+
+  if(bestGap >= 999) return 99;
+  const gap = bestGap;
 
   // Map gap to probability
   let prob;
