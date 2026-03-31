@@ -184,6 +184,14 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
 @media(max-width:640px){
   .hide-mobile{display:none!important}
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  th,td{padding:4px 3px;font-size:.67rem}
+  .t-nm{font-size:.76rem}
+  .pos-badge{font-size:.55rem;padding:1px 4px}
+  .main{padding:8px}
+  .rank-col{display:none}
+  .fc-grid{grid-template-columns:1fr}
+  .cc-row{grid-template-columns:1fr 1fr}
+}
   th,td{padding:4px 4px;font-size:.68rem}
   .t-nm{font-size:.8rem}
   .pos-badge{font-size:.58rem;padding:1px 4px}
@@ -247,10 +255,10 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
           <div class="tbl-scroll">
             <table>
               <thead><tr>
-                <th class="num">#</th><th>Team</th><th>Pos</th>
+                <th class="num rank-col">#</th><th>Team</th><th>Pos</th>
                 <th class="num">GP</th><th class="num">PTS</th>
                 <th class="num">W</th><th class="num muted">L</th>
-                <th class="num muted">OTL</th>
+                <th class="num muted hide-mobile">OTL</th>
                 <th class="num rw-col" title="Regulation Wins - 1st tiebreaker">RW</th>
                 <th class="num row-col" title="Regulation+OT Wins - 2nd tiebreaker">ROW</th>
                 <th class="num muted">LEFT</th>
@@ -1337,7 +1345,7 @@ function _buildCard(away,home,aScore,hScore,state,label){
       `<span class="sc-side ${hwCls}"><span class="sc-score">${hScore}</span><span class="sc-tm">${home}</span></span>`;
   }
 
-  const badgeHtml=isLive?`<span class="sc-badge bdg-live">● ${label}</span>`:isFin?`<span class="sc-badge bdg-fin">F</span>`:'';
+  const badgeHtml=isLive?`<span class="sc-badge bdg-live">● ${label}</span>`:isFin?`<span class="sc-badge bdg-fin">F</span>`:isPre?`<span class="sc-badge bdg-pre">${label}</span>`:'';
 
   let dotHtml='';
   if(root&&!isNYI){
@@ -1355,7 +1363,9 @@ function _buildCard(away,home,aScore,hScore,state,label){
 }
 
 function _renderScores(games){
-  const filtered=games.filter(g=>RACE_GROUP.has(g.awayTeam.abbrev)||RACE_GROUP.has(g.homeTeam.abbrev));
+  const filtered=games.filter(g=>
+    g.awayTeam.abbrev==='NYI'||g.homeTeam.abbrev==='NYI'||
+    RACE_GROUP.has(g.awayTeam.abbrev)||RACE_GROUP.has(g.homeTeam.abbrev));
   filtered.sort((a,b)=>{
     const aN=a.awayTeam.abbrev==='NYI'||a.homeTeam.abbrev==='NYI'?0:1;
     const bN=b.awayTeam.abbrev==='NYI'||b.homeTeam.abbrev==='NYI'?0:1;
@@ -1406,9 +1416,8 @@ function _renderScores(games){
 
 async function _fetchScores(){
   try{
-    const url=_scoreOffset===0
-      ?'/.netlify/functions/nhl?type=scores'
-      :'/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_scoreOffset);
+    // Always use explicit date — /score/now can return yesterday's finals
+    const url='/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_scoreOffset);
     const r=await fetch(url);
     if(!r.ok) throw new Error(r.status);
     const d=await r.json();
