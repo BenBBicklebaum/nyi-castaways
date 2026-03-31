@@ -291,20 +291,22 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
           <div class="tbl-scroll">
             <table>
               <thead><tr>
-                <th>Team</th><th>Pos</th>
-                <th class="num">GP</th><th class="num">PTS</th>
-                <th class="num">W</th>
-                <th class="num hide-mobile muted">L</th>
-                <th class="num hide-mobile muted">OTL</th>
-                <th class="num rw-col" title="Regulation Wins — 1st tiebreaker">RW</th>
-                <th class="num row-col" title="Reg+OT Wins — 2nd tiebreaker">ROW</th>
-                <th class="num muted">LEFT</th>
-                <th class="num muted" title="Raw SOS Rank (1=hardest)">SOS#</th>
-                <th class="num muted" title="Adjusted SOS Rank (1=hardest)">ADJ#</th>
-                <th class="num diff-col" title="Goal differential">DIFF</th>
-                <th class="num hide-mobile" title="Last 10 games">L10</th>
-                <th class="num stk-col" title="Current streak">STK</th>
-                <th class="num proj-col">PROJ</th>
+                <th title="Team abbreviation">Team</th>
+                <th title="Current playoff position — division seed or wild card spot">Pos</th>
+                <th class="num" title="Games Played">GP</th>
+                <th class="num" title="Points — 2pts for a win, 1pt for OT/SO loss">PTS</th>
+                <th class="num" title="Wins (regulation, OT, and shootout)">W</th>
+                <th class="num hide-mobile muted" title="Regulation losses">L</th>
+                <th class="num hide-mobile muted" title="Overtime or shootout losses — team earns 1 point">OTL</th>
+                <th class="num rw-col" title="Regulation Wins — 2nd tiebreaker after pts%. Wins in regulation time only, no OT or shootout. Higher is better.">RW</th>
+                <th class="num row-col" title="Regulation + OT Wins — 3rd tiebreaker after RW. Includes regulation and overtime wins, excludes shootout wins. Higher is better.">ROW</th>
+                <th class="num muted" title="Games Left — remaining regular season games">LEFT</th>
+                <th class="num muted" title="Raw SOS Rank — strength of remaining schedule based on opponents' current points percentage. #1 = hardest schedule in the league, #32 = easiest.">SOS#</th>
+                <th class="num muted" title="Adjusted SOS Rank — same as SOS# but applies a haircut to opponents locked into their seed who may rest starters in their final 2 games. ★ = haircut was applied. #1 = hardest, #32 = easiest.">ADJ#</th>
+                <th class="num diff-col" title="Goal Differential — goals scored minus goals allowed. Used as the 6th tiebreaker after W.">DIFF</th>
+                <th class="num" title="Last 10 Games — W-L-OTL record over the past 10 games. Shows recent form.">L10</th>
+                <th class="num stk-col" title="Current Streak — W = win streak, L = loss streak. Number shows how many consecutive games.">STK</th>
+                <th class="num proj-col" title="Projected Final Points — blends current pts/game pace, adjusted SOS regression (30% weight), and a small H2H penalty for games vs direct rivals.">PROJ</th>
               </tr></thead>
               <tbody id="race-tbody"><tr><td colspan="13" class="ins-loading">Loading...</td></tr></tbody>
             </table>
@@ -974,7 +976,7 @@ function renderRace() {
       <td class="num muted">#${rawRank}</td>
       <td class="num muted">#${rank}${adjFlag}</td>
       <td class="num diff-col" style="color:${s.diff>0?'#4ade80':s.diff<0?'#f87171':'var(--muted)'}">${s.diff>0?'+':''}${s.diff}</td>
-      <td class="num hide-mobile" style="font-size:.7rem">${s.l10w}-${s.l10l}-${s.l10otl}</td>
+      <td class="num" style="font-size:.7rem">${s.l10w}-${s.l10l}-${s.l10otl}</td>
       <td class="num stk-col" style="color:${s.streak&&s.streak[0]==='W'?'#4ade80':s.streak&&s.streak[0]==='L'?'#f87171':'#94a3b8'}">${s.streak||'—'}</td>
       <td class="num proj-col">${proj}</td>
     </tr>
@@ -991,7 +993,7 @@ function renderRace() {
 
   // ATL Watch — MTL if BOS can still catch them or MTL already dropped
   if(ST['MTL']&&(mtlMayDropToWC()||mtlInWC())){
-    const atlLabel=mtlInWC()?'🔴 ATL Watch: MTL Dropped to WC':'👀 ATL Watch: MTL (ATL#3) at Risk of WC Drop';
+    const atlLabel=mtlInWC()?'🔴 ATLANTIC WATCH: MTL Dropped to WC':'👀 ATLANTIC WATCH: MTL (ATL#3) at Risk of WC Drop';
     rows.push(`<tr class="race-sec-hd"><td colspan="16"><span class="sec-banner" style="display:block;padding:5px 10px;font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;background:rgba(248,113,113,.1);color:#f87171">${atlLabel}</span></td></tr>`);
     raceRow('MTL');
   }
