@@ -238,6 +238,42 @@ exports.handler = async (event, context) => {
 
     const gamesLeft = 82 - nyi.gp;
     const today = new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'});
+
+    // NYI remaining schedule (hardcoded, filter out played games using GP count)
+    // Full season schedule from baked-in data — filter to only future games
+    const NYI_FULL_SCHED = [
+      ['Mar 30','PIT','H'],['Mar 31','BUF','A'],['Apr 3','PHI','H'],
+      ['Apr 4','CAR','A'],['Apr 9','TOR','H'],['Apr 11','OTT','H'],
+      ['Apr 12','MTL','H'],['Apr 14','CAR','H']
+    ];
+    const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5};
+    const todayET = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+    const todayOnly = new Date(todayET.getFullYear(), todayET.getMonth(), todayET.getDate());
+    const nyiRemaining = NYI_FULL_SCHED.filter(g => {
+      const p = g[0].split(' ');
+      const gd = new Date(2026, MONTHS[p[0]], parseInt(p[1]));
+      return gd >= todayOnly;
+    });
+    const RACE_TEAMS = new Set(['BOS','CBJ','DET','MTL','NYI','OTT','PHI','PIT']);
+    const nyiH2H = nyiRemaining.filter(g => RACE_TEAMS.has(g[1]));
+    const nyiSchedStr = nyiRemaining.map(g => `${g[0]}: ${g[2]==='H'?'vs':'@'}${g[1]}${RACE_TEAMS.has(g[1])?' [RIVAL]':''}`).join(', ');
+
+    // Bubble team remaining schedules for WC analysis
+    const BUBBLE_SCHEDS = {
+      OTT: [['Mar 29','BOS','H'],['Apr 1','BUF','H'],['Apr 3','WSH','A'],['Apr 5','BOS','A'],['Apr 7','CBJ','H'],['Apr 9','DET','A'],['Apr 11','NYI','A'],['Apr 14','TBL','A']],
+      DET: [['Mar 29','NJD','H'],['Apr 1','CBJ','A'],['Apr 2','PHI','H'],['Apr 4','WSH','H'],['Apr 7','CBJ','H'],['Apr 9','OTT','H'],['Apr 11','BUF','A'],['Apr 14','TOR','H']],
+      PHI: [['Mar 30','TOR','A'],['Apr 2','DET','A'],['Apr 3','NYI','A'],['Apr 5','BOS','H'],['Apr 7','NJD','H'],['Apr 10','WSH','H'],['Apr 12','CBJ','A'],['Apr 14','MTL','H']]
+    };
+    const bubbleSchedStr = Object.entries(BUBBLE_SCHEDS).map(([t, sched]) => {
+      const tGp = ST[t] ? ST[t].wins+ST[t].losses+ST[t].otl : 0;
+      const tGl = 82-tGp;
+      const rem = sched.filter(g => {
+        const p = g[0].split(' ');
+        const gd = new Date(2026, MONTHS[p[0]], parseInt(p[1]));
+        return gd >= todayOnly;
+      }).slice(0, tGl);
+      return `${t} remaining: ${rem.map(g=>`${g[0]} ${g[2]==='H'?'vs':'@'}${g[1]}`).join(', ')}`;
+    }).join('\n');
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
     const prompt = `You are AI Butchie Bot — a sharp NHL analyst. Return ONLY a JSON object, nothing else.
@@ -251,28 +287,45 @@ ${recentStr}${mtlContext}
 
 NYI has ${gamesLeft} games left. Season ends April 16, 2026. Today is ${today}.
 BOS leads WC1 by ${(ST['BOS']?ST['BOS'].pts-nyi.pts:0)} points. Only discuss reclaiming WC1 if that gap is 4 or fewer.
-Only discuss games that have NOT yet been played (future dates only). Do not reference past games as upcoming.
+
+DIVISION STRUCTURE (critical — do not mix these up):
+- METROPOLITAN DIVISION teams: CAR, NYI, PIT, CBJ, PHI, WSH, NJD, NYR
+- ATLANTIC DIVISION teams: BUF, TBL, MTL, BOS, OTT, DET, TOR, FLA
+- OTT and DET are ATLANTIC teams competing for WILD CARD spots — they are NOT Metro rivals
+- PHI is BOTH a Metro team AND a WC bubble team
+- Metro #3 race is NYI vs PIT (and potentially CBJ/PHI below)
+- Wild Card race is NYI vs OTT, DET, PHI (from outside Metro top 3)
+
+NYI REMAINING SCHEDULE (${gamesLeft} games): ${nyiSchedStr}
+NYI H2H GAMES vs RIVALS remaining: ${nyiH2H.length ? nyiH2H.map(g=>g[0]+' '+(g[2]==='H'?'vs':'@')+g[1]).join(', ') : 'None'}
+
+ONLY reference games listed above as upcoming. NEVER invent or assume games not on this list.
+
+BUBBLE TEAM SCHEDULES (for WC analysis):
+${bubbleSchedStr}
 
 Return this exact JSON structure with NO other text, NO markdown, NO explanation:
 {"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
-METRO insights (exactly 3, about NYI's Metro Division finish):
-- ONLY discuss reclaiming Metro #2 if the gap to PIT is 3pts or less — otherwise focus ONLY on holding Metro #3
-- Always include the tiebreaker situation using the RW/ROW data above (NHL order: pts% → RW → ROW → W → H2H)
-- Include a specific pts/game pace calculation NYI needs
-- Focus on the most important upcoming H2H game for seeding
-- DO NOT state things visible at a glance
-- Every insight must contain a specific number
-- Max 2 sentences per insight. Each sentence max 20 words.
+METRO insights (exactly 3). These must go BEYOND what the standings show — synthesize multiple data points to reveal something non-obvious:
 
-WILDCARD insights (exactly 3, COMPLETELY DIFFERENT from metro insights):
-- DO NOT repeat any point made in the metro section
-- Focus ONLY on the WC race: OTT, DET, PHI bubble threats vs NYI
-- Include: specific pts/game rate NYI needs to hold off the top bubble team
-- Include: the most impactful upcoming rival-vs-rival game (two bubble teams playing each other) and the date
-- Include: which bubble team has the most favorable remaining schedule and exactly why
-- Only mention BOS/WC1 if the gap is 4pts or less
-- Max 2 sentences per insight. Each sentence max 20 words.
+- Insight 1 MUST be about the RW tiebreaker vs PIT specifically: state who leads RW now, by how much, AND calculate what NYI needs to do in remaining games to project a RW lead at season end (estimate: ~55% of wins come in regulation). If PIT leads RW now, how many regulation wins does NYI need? Be precise.
+- Insight 2 MUST be a scenario analysis. IMPORTANT MATH: a win = 2pts, OT/SO win = 2pts, OT/SO loss = 1pt, regulation loss = 0pts. NYI currently has ${nyi.pts}pts. If NYI goes 4-2, they add 8pts = ${nyi.pts+8}pts. If 3-3, add 6pts = ${nyi.pts+6}pts. Compare to PIT's current ${ST['PIT']?ST['PIT'].pts:0}pts with their remaining games. Metro #3 requires beating PIT OR finishing ahead of them. ONLY compare NYI to Metro teams (CAR, PIT, CBJ, PHI, WSH, NJD, NYR) — NOT Ottawa or Boston which are WC/ATL teams.
+- Insight 3 MUST analyze a specific upcoming game from NYI REMAINING SCHEDULE and its DUAL impact — both the direct pts AND effect on a Metro or WC rival. OTT is a WC team, not Metro. PHI IS a Metro team and also a WC bubble team.
+- NEVER mention PIT in the wildcard section
+- NEVER put OTT or BOS in the Metro race — they are NOT Metro division teams
+- NEVER restate anything already shown in the standings
+- Max 2 sentences. Every sentence must contain a number.
+
+WILDCARD insights (exactly 3). Completely separate from metro — about the WC bubble race only. Must surface non-obvious findings:
+
+- Insight 1 MUST be a convergence scenario with explicit math. Current pts: NYI ${nyi.pts}, then check OTT/DET/PHI pts from STANDINGS DATA. Calculate: NYI projected final = ${nyi.pts} + (current pace × ${gamesLeft} games). Each rival's projected final = their current pts + (their pace × their games left). Show the math explicitly: "NYI projects Xpts, OTT projects Ypts, gap = Z". Verify your arithmetic before writing.
+- Insight 2 MUST identify a specific rival-vs-rival game from BUBBLE TEAM SCHEDULES. CRITICAL MATH: when Team A beats Team B, Team B LOSES (gets 0pts from that game) — they do NOT gain points. So if OTT has 86pts and loses to DET, OTT stays at 86pts. NYI's lead over OTT stays the same OR grows by 2 if NYI also wins that night. State the date, teams, and the correct math.
+- Insight 3 MUST be about schedule difficulty — use BUBBLE TEAM SCHEDULES above to identify which rival has the hardest or easiest remaining opponents. ONLY reference opponents that actually appear in that team's schedule. DET does NOT play NYI — do not say they do. PHI plays NYI on Apr 3. OTT plays NYI on Apr 11.
+- NEVER use pts/game rates — always say "X pts in Y games"
+- NEVER mention PIT in the wildcard section
+- NEVER invent games — only reference games in BUBBLE TEAM SCHEDULES and NYI REMAINING SCHEDULE
+- Max 2 sentences. Every sentence must contain a number.
 
 CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
 
