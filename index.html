@@ -1272,11 +1272,16 @@ function renderClinch(){
       ?`<span class="cc-badge bdg-good">On pace ✓</span>`
       :`<span class="cc-badge bdg-need">${diff} more pts</span>`;
 
-    // TB indicator on card — compact
+    // TB note on card — only when projection gap is tight (within 2pts)
     let tbCard='';
     if(s && Math.abs(projGap)<=2){
-      if(edge==='ahead') tbCard=`<div style="font-size:.58rem;color:#4ade80;margin-top:3px">RW edge vs ${t} (${nyi.rw}-${s.rw}) ✓</div>`;
-      else if(edge==='behind') tbCard=`<div style="font-size:.58rem;color:#f87171;margin-top:3px">RW deficit vs ${t} (${nyi.rw}-${s.rw}) ✗</div>`;
+      if(edge==='ahead'){
+        tbCard=`<div style="font-size:.58rem;color:#4ade80;margin-top:3px">Tiebreaker held vs ${t} — tied pts = NYI advances</div>`;
+      } else if(edge==='behind'){
+        tbCard=`<div style="font-size:.58rem;color:#f87171;margin-top:3px">Tiebreaker deficit vs ${t} — need 1 extra pt to pass them</div>`;
+      } else {
+        tbCard=`<div style="font-size:.58rem;color:#fbbf24;margin-top:3px">Tiebreaker even with ${t} — next TB stat: ROW (NYI ${nyi.row} vs ${t} ${s.row})</div>`;
+      }
     }
 
     html+=`<div class="cc" data-clinch="${pop}" style="cursor:pointer">
@@ -1294,16 +1299,19 @@ function renderClinch(){
   if(mn){
     const lines=[];
     [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
-      const t=threshTeam(pos); if(!t) return;
-      const need=projPts(t)+1, diff=need-nyi.pts;
-      if(diff<=0){
-        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span> — on pace`);
+      const t=threshTeam(pos); if(!t||!ST[t]) return;
+      const s=ST[t];
+      const rivalGp=s.wins+s.losses+s.otl, rivalGl=82-rivalGp;
+      const rivalMax=s.pts+rivalGl*2; // max pts rival can possibly reach
+      const edge=tbEdge('NYI',t);
+      // Magic number: points combo NYI+rival need to guarantee NYI finishes ahead
+      // = rivalMax - nyi.pts + 1, minus 1 if NYI holds tiebreaker
+      const tbBonus = edge==='ahead'?1:0; // if NYI wins TB, tie is enough
+      const magic = rivalMax - nyi.pts + 1 - tbBonus;
+      if(magic<=0){
+        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span> clinched vs ${t}`);
       } else {
-        const nyiGp2=nyi.wins+nyi.losses+nyi.otl;
-        const expPts2=nyiGp2?Math.round((nyi.pts/nyiGp2)*nyiGl):0;
-        const extra=diff-expPts2;
-        const winsMin=Math.ceil(diff/2);
-        lines.push(`<span style="color:var(--muted)">${lbl}:</span> need <strong>${diff}pts</strong> (pace gives ~${expPts2}, need ${extra>0?extra+' more':'on pace'}) · ~${winsMin}+ wins`);
+        lines.push(`<span style="color:var(--muted)">${lbl}:</span> <strong>MN ${magic}</strong> vs ${t}${tbBonus?' (TB✓)':''}`);
       }
     });
     mn.innerHTML='<span style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--org)">🎯 Magic Numbers&nbsp;&nbsp;</span>'+lines.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
