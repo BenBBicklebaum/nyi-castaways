@@ -996,7 +996,7 @@ function renderRace() {
   [met[1],met[2]].filter(Boolean).forEach(raceRow);
 
   // ATL Watch — MTL if BOS can still catch them or MTL already dropped
-  if(ST['MTL']&&(mtlMayDropToWC()||mtlInWC())){
+  if(ST['MTL']&&(mtlInWC()||(mtlMayDropToWC()&&ST['BOS']&&(ST['MTL'].pts-ST['BOS'].pts)<=5))){
     const atlLabel=mtlInWC()?'🔴 ATLANTIC WATCH: MTL Dropped to WC':'👀 ATLANTIC WATCH: MTL (ATL#3) at Risk of WC Drop';
     rows.push(`<tr class="race-sec-hd"><td colspan="16"><span class="sec-banner" style="display:block;padding:5px 10px;font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;background:rgba(248,113,113,.1);color:#f87171">${atlLabel}</span></td></tr>`);
     raceRow('MTL');
@@ -1275,20 +1275,62 @@ function renderObservations(){
 
   const adjNote=haircuts.length?` (adj for ${haircuts.join(',')} likely resting)`:'';
 
+    // Metro obs context
+  const pit=ST['PIT'], pitGp=pit?pit.wins+pit.losses+pit.otl:0, pitGl=82-pitGp;
+  const pitGap=pit?pit.pts-nyi.pts:0; // positive = PIT ahead
+  const nyiRWvsRivals=pit?nyi.rw-pit.rw:0; // positive = NYI leads RW tb
+  const nyiROWvsRivals=pit?nyi.row-pit.row:0;
+  const h2hVsPIT=nyiRem.filter(g=>g[1]==='PIT');
+  const h2hDates=h2h.map(g=>`${g[2]==='H'?'vs':'@'}${g[1]} ${g[0]}`).join(', ');
+
   const metObs=[
-    {lbl:'📍 Where They Stand',txt:`NYI sits at <strong>Metro #${metRank}</strong> with <strong>${nyi.pts}pts</strong> in ${nyiGp}GP (${nyiGl} left). Projecting <strong>${nyiProj}pts</strong>. RW: ${nyi.rw} | ROW: ${nyi.row}. ${nyi.streak?'Streak: <strong>'+nyi.streak+'</strong>.':''} L10: <strong>${nyi.l10w}-${nyi.l10l}-${nyi.l10otl}</strong>.`},
-    {lbl:'📊 Schedule Difficulty',txt:`NYI faces the <strong>#${nyiRank} hardest adjusted schedule</strong> remaining (adj SOS ${nyiAdj.toFixed(3)}${adjNote}). ${nyiRank<=5?'A significant challenge down the stretch.':nyiRank<=10?'Tougher than most rivals.':'On par with league average.'}`},
-    {lbl:'⚔️ Head-to-Head Games',txt:`<strong>${h2h.length} of ${nyiGl} remaining games (${Math.round(h2h.length/nyiGl*100)}%)</strong> are H2H vs rivals: ${h2h.map(g=>(g[2]==='H'?'vs':'@')+g[1]).join(', ')}. Each is a potential 4-pt swing.`}
+    {lbl:'🏒 Metro #2 Tiebreaker Race',txt:pit
+      ?`PIT leads by <strong>${pitGap}pt${pitGap!==1?'s':''}</strong> and ${nyiRWvsRivals<0?`also holds the RW tiebreaker (PIT ${pit.rw} vs NYI ${nyi.rw}) — NYI would need to close BOTH gaps`:`but NYI leads the RW tiebreaker ${nyi.rw}-${pit.rw} — if tied on pts, NYI wins Metro #2`}. ${h2hVsPIT.length?`The <strong>${h2hVsPIT[0][0]} NYI-PIT game</strong> is the pivotal moment for this race.`:`No more H2H vs PIT — both teams must be tracked independently.`}`
+      :'Metro #2 race context unavailable.'},
+    {lbl:'⚠️ Schedule Burden',txt:`NYI has the <strong>#${nyiRank} hardest remaining schedule</strong> while rivals have easier paths. NYI projects <strong>${nyiProj}pts</strong> at current pace${pit?` vs PIT's projection of ${projPts('PIT')}pts`:''} — the schedule gap means NYI must outperform pace just to hold position.`},
+    {lbl:'⚔️ H2H Swing Games',txt:h2h.length
+      ?`<strong>${h2h.length} of ${nyiGl} remaining games are direct H2H</strong>: ${h2hDates}. Each win adds 2pts AND costs a rival 2pts — a 4-pt swing. These are NYI's best path to improving their position.`
+      :`No H2H games remaining. NYI's playoff fate is now decided by running the table and watching rivals.`}
   ];
   document.getElementById('metro-obs-cards').innerHTML=metObs.map(o=>
     `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
   ).join('');
 
   const wcPos=wcp.indexOf('NYI');
-  const wc2Gap=wcp[1]?nyi.pts-ST[wcp[1]].pts:0;
+  const wc2Rival=wcp[1]&&wcp[1]!=='NYI'?wcp[1]:wcp[2];
+  const wc2Gap=wc2Rival?nyi.pts-ST[wc2Rival].pts:0;
+  
+  // Find closest bubble threats (outside WC, within 5pts)
+  const bubbleThreats=wcp.slice(2).filter(t=>t!=='NYI'&&ST[t]&&(nyi.pts-ST[t].pts)<=5)
+    .sort((a,b)=>ST[b].pts-ST[a].pts);
+  const threat1=bubbleThreats[0], threat2=bubbleThreats[1];
+  
+  // Rival vs rival games that help NYI (two bubble teams playing each other)
+  const rvr=nyiRem.length ? [] : [];
+  // Check remaining schedule of bubble teams for matchups between them
+  const bubbleAll=[...wcp.slice(2)].filter(t=>t!=='NYI'&&ST[t]);
+  const rvrGames=[];
+  const seen=new Set();
+  bubbleAll.forEach(t=>{
+    const tGl=82-(ST[t].wins+ST[t].losses+ST[t].otl);
+    (FULL_SCHEDULE[t]||[]).slice(-tGl).forEach(g=>{
+      if(bubbleAll.includes(g[1])&&g[2]==='H'){
+        const key=[t,g[1]].sort().join('-');
+        if(!seen.has(key)){ seen.add(key); rvrGames.push(`${g[1]}@${t} (${g[0]})`); }
+      }
+    });
+  });
+
   const wcObs=[
-    {lbl:'📍 Wild Card Position',txt:`NYI sits <strong>${wcPos<0?'in a division spot, above the WC bubble':'at WC'+(wcPos+1)}</strong>. ${wcp[1]?`WC2 (${wcp[1]}) is ${Math.abs(wc2Gap)}pts ${wc2Gap>=0?'behind':'ahead of'} NYI.`:''}`},
-    {lbl:'📊 Schedule vs Rivals',txt:`NYI has the <strong>#${nyiRank} hardest adjusted schedule</strong> remaining. ${nyiRank<=8?'Most rivals have easier paths to points.':'Similar difficulty to the rest of the field.'}`}
+    {lbl:'🎯 Closest Threats',txt:threat1
+      ?`<strong>${threat1}</strong> is ${nyi.pts-ST[threat1].pts}pt${nyi.pts-ST[threat1].pts!==1?'s':''} back${threat2?` and <strong>${threat2}</strong> is ${nyi.pts-ST[threat2].pts}pts back`:''}. ${sosRank(threat1)<=16?`${threat1} has a favorable schedule (#${sosRank(threat1)} easiest) — NYI cannot afford to slip.`:`${threat1} faces a tough remaining schedule (#${sosRank(threat1)}) which helps NYI.`}`
+      :'No teams within 5pts \u2014 NYI playoff spot is looking secure.'},
+    {lbl:'💥 Rival-vs-Rival Games',txt:rvrGames.length
+      ?`Key bubble matchups still to play: <strong>${rvrGames.slice(0,3).join(', ')}</strong>. These games guarantee one rival gets hurt — NYI should track these closely.`
+      :'No remaining bubble-vs-bubble games \u2014 every team plays non-rivals down the stretch.'},
+    {lbl:'📈 Pace Required',txt:wc2Rival&&ST[wc2Rival]
+      ?`To guarantee finishing ahead of <strong>${wc2Rival}</strong>, NYI needs <strong>${Math.max(0,projPts(wc2Rival)+1-nyi.pts)} more pts</strong> in ${nyiGl} games (${nyiGl?((Math.max(0,projPts(wc2Rival)+1-nyi.pts))/nyiGl).toFixed(2):0} pts/game). NYI's H2H games vs rivals are the most efficient path to those points.`
+      :'Pace calculation unavailable.'}
   ];
   document.getElementById('wc-obs-cards').innerHTML=wcObs.map(o=>
     `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
@@ -1544,7 +1586,27 @@ function _renderScores(games){
   }).join('');
   const now=new Date();
   const tsStr=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-  if(ts) ts.textContent=_scoreOffset===0?'Updated '+tsStr:_dateLabel(_scoreOffset);
+  // Show actual game date from API when available
+  const _gameDates=(filtered||[]).map(g=>g.gameDate).filter(Boolean);
+  const _gameDate=_gameDates[0];
+  if(_scoreOffset!==0){
+    if(ts) ts.textContent=_dateLabel(_scoreOffset);
+  } else if(_gameDate){
+    const _gd=new Date(_gameDate+'T12:00:00');
+    const _today=todayDate();
+    const _yest=new Date(_today); _yest.setDate(_yest.getDate()-1);
+    if(_gd.toDateString()===_today.toDateString()){
+      if(ts) ts.textContent='Updated '+tsStr;
+    } else if(_gd.toDateString()===_yest.toDateString()){
+      if(ts) ts.textContent='Showing '+_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · no games yet today';
+      const _navEl=document.getElementById('sc-nav-date');
+      if(_navEl&&_navEl.textContent==='Today') _navEl.textContent=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    } else {
+      if(ts) ts.textContent=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    }
+  } else {
+    if(ts) ts.textContent='Updated '+tsStr;
+  }
   const raceTs=document.getElementById('race-ts');
   if(raceTs) raceTs.textContent='Live · '+tsStr;
   const tonightBar=document.getElementById('tonight-bar');
