@@ -254,18 +254,19 @@ Return this exact JSON structure with NO other text, NO markdown, NO explanation
 {"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
 METRO insights (exactly 3, about NYI's Metro Division finish):
-- Focus on tiebreaker math vs PIT using the RW/ROW data above — who leads now and projected
-- Focus on pts/game pace NYI needs to reclaim Metro #2
-- Focus on specific upcoming H2H games that affect seeding
-- DO NOT state things visible at a glance (e.g. "PIT is ahead")
-- Every insight must contain a specific number calculated from the data
+- ONLY discuss reclaiming Metro #2 if the gap to PIT is 3pts or less — otherwise focus ONLY on holding Metro #3
+- Always include the tiebreaker situation using the RW/ROW data above (NHL order: pts% → RW → ROW → W → H2H)
+- Include a specific pts/game pace calculation NYI needs
+- Focus on the most important upcoming H2H game for seeding
+- DO NOT state things visible at a glance
+- Every insight must contain a specific number
 - Max 2 sentences per insight. Each sentence max 20 words.
 
-WILDCARD insights (exactly 3, about holding a playoff spot):
-- Focus on specific pts/game rates NYI needs to hold off OTT/DET/PHI
-- Focus on which bubble team has the most favorable schedule and by how much
-- Focus on rival-vs-rival matchups that help NYI
-- DO NOT state the obvious — every insight must reveal something non-obvious
+WILDCARD insights (exactly 3, about NYI holding a playoff spot):
+- Focus on defending the current position — only discuss gaining WC1 if the gap is 3pts or less
+- Always include: specific pts/game rate NYI needs vs the most dangerous bubble team
+- Always include: the most impactful rival-vs-rival game coming up and exactly why it helps
+- Always include: the single most dangerous remaining threat with exact numbers
 - Max 2 sentences per insight. Each sentence max 20 words.
 
 CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
