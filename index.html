@@ -1479,14 +1479,32 @@ function _buildCard(away,home,aScore,hScore,state,label){
 
   // TEAM SCORE | SCORE TEAM layout
   let matchHtml;
+  // Team colors
+  const awayTmCol=TEAM_COLORS[away]||'#cbd5e1';
+  const homeTmCol=TEAM_COLORS[home]||'#cbd5e1';
+
+  // Score colors based on rooting interest
+  let awayScoreCol='#e2e8f0', homeScoreCol='#e2e8f0';
+  if(isNYI){
+    awayScoreCol=away==='NYI'?'var(--org)':'#94a3b8';
+    homeScoreCol=home==='NYI'?'var(--org)':'#94a3b8';
+  } else if(root&&(isLive||isFin)){
+    const rootWin=(root===away&&wa)||(root===home&&wh);
+    const rootLose=(root===away&&!wa&&!isPre)||(root===home&&!wh&&!isPre);
+    if(wa||wh){ // someone is winning
+      awayScoreCol=wa?((root===away)?'#4ade80':'#f87171'):(wh?((root===away)?'#f87171':'#e2e8f0'):'#e2e8f0');
+      homeScoreCol=wh?((root===home)?'#4ade80':'#f87171'):(wa?((root===home)?'#f87171':'#e2e8f0'):'#e2e8f0');
+    }
+  }
+
   if(isPre){
-    matchHtml=`<span class="sc-tm">${away}</span><span class="sc-at">@</span><span class="sc-tm">${home}</span><span class="sc-time">${label}</span>`;
+    matchHtml=`<span class="sc-tm" style="color:${awayTmCol}">${away}</span><span class="sc-at">@</span><span class="sc-tm" style="color:${homeTmCol}">${home}</span><span class="sc-time">${label}</span>`;
   } else {
     const awCls=isFin&&wa?'sc-winner':'', hwCls=isFin&&wh?'sc-winner':'';
     matchHtml=
-      `<span class="sc-side ${awCls}"><span class="sc-tm">${away}</span><span class="sc-score">${aScore}</span></span>`+
+      `<span class="sc-side ${awCls}"><span class="sc-tm" style="color:${awayTmCol}">${away}</span><span class="sc-score" style="color:${awayScoreCol};font-size:1rem;font-weight:900">${aScore}</span></span>`+
       `<span class="sc-sep">|</span>`+
-      `<span class="sc-side ${hwCls}"><span class="sc-score">${hScore}</span><span class="sc-tm">${home}</span></span>`;
+      `<span class="sc-side ${hwCls}"><span class="sc-score" style="color:${homeScoreCol};font-size:1rem;font-weight:900">${hScore}</span><span class="sc-tm" style="color:${homeTmCol}">${home}</span></span>`;
   }
 
   const badgeHtml=isLive?`<span class="sc-badge bdg-live">● ${label}</span>`:isFin?`<span class="sc-badge bdg-fin">F</span>`:isPre?`<span class="sc-badge bdg-pre">${label}</span>`:'';
