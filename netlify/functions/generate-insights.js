@@ -320,10 +320,11 @@ METRO insights (exactly 3). These must go BEYOND what the standings show — syn
 WILDCARD insights (exactly 3). Completely separate from metro — about the WC bubble race only. Must surface non-obvious findings:
 
 - Insight 1 MUST be a convergence scenario with explicit math. Current pts: NYI ${nyi.pts}, then check OTT/DET/PHI pts from STANDINGS DATA. Calculate: NYI projected final = ${nyi.pts} + (current pace × ${gamesLeft} games). Each rival's projected final = their current pts + (their pace × their games left). Show the math explicitly: "NYI projects Xpts, OTT projects Ypts, gap = Z". Verify your arithmetic before writing.
-- Insight 2 MUST identify a specific rival-vs-rival game from BUBBLE TEAM SCHEDULES that creates a zero-sum outcome. State the date, teams, and the exact math: "If [A] beats [B], NYI's effective lead grows to X pts because..."
-- Insight 3 MUST identify something counterintuitive: e.g. which rival is actually MORE dangerous than their current pts suggest (due to schedule, pace, H2H games remaining), OR which is less dangerous than they appear. Show the math.
+- Insight 2 MUST identify a specific rival-vs-rival game from BUBBLE TEAM SCHEDULES. CRITICAL MATH: when Team A beats Team B, Team B LOSES (gets 0pts from that game) — they do NOT gain points. So if OTT has 86pts and loses to DET, OTT stays at 86pts. NYI's lead over OTT stays the same OR grows by 2 if NYI also wins that night. State the date, teams, and the correct math.
+- Insight 3 MUST be about schedule difficulty — use BUBBLE TEAM SCHEDULES above to identify which rival has the hardest or easiest remaining opponents. ONLY reference opponents that actually appear in that team's schedule. DET does NOT play NYI — do not say they do. PHI plays NYI on Apr 3. OTT plays NYI on Apr 11.
 - NEVER use pts/game rates — always say "X pts in Y games"
 - NEVER mention PIT in the wildcard section
+- NEVER invent games — only reference games in BUBBLE TEAM SCHEDULES and NYI REMAINING SCHEDULE
 - Max 2 sentences. Every sentence must contain a number.
 
 CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
