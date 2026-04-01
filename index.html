@@ -1542,7 +1542,7 @@ function _buildCard(away,home,aScore,hScore,state,label){
   }
 
   if(isPre){
-    matchHtml=`<span class="sc-tm" style="color:${awayTmCol}">${away}</span><span class="sc-at">@</span><span class="sc-tm" style="color:${homeTmCol}">${home}</span><span class="sc-time">${label}</span>`;
+    matchHtml=`<span class="sc-tm" style="color:${awayTmCol}">${away}</span><span class="sc-at">@</span><span class="sc-tm" style="color:${homeTmCol}">${home}</span>`;
   } else {
     const awCls=isFin&&wa?'sc-winner':'', hwCls=isFin&&wh?'sc-winner':'';
     matchHtml=
@@ -1594,39 +1594,48 @@ function _renderScores(games){
   const _navLbl=document.getElementById('sc-nav-date');
   const _todayBtn=document.getElementById('sc-today-btn');
 
-  if(_scoreOffset===0 && _gameDate){
+  // Always re-detect what date the API is actually on
+  if(_gameDate){
     const _gd=new Date(_gameDate+'T12:00:00');
     const _today=todayDate();
     const _yest=new Date(_today); _yest.setDate(_yest.getDate()-1);
-    if(_gd.toDateString()===_today.toDateString()){
-      // API is on today — normal mode
-      _apiBaseOffset=0;
-      if(ts) ts.textContent='Updated '+tsStr;
-      if(_navLbl) _navLbl.textContent='Today';
-      if(_todayBtn) _todayBtn.style.display='none';
-    } else if(_gd.toDateString()===_yest.toDateString()){
-      // API still on yesterday — offset base is -1
-      _apiBaseOffset=-1;
+    const _apiIsYesterday=_gd.toDateString()===_yest.toDateString();
+    const _apiIsToday=_gd.toDateString()===_today.toDateString();
+    const _newBase=_apiIsYesterday?-1:0;
+
+    // If API base shifted (e.g. API updated from yesterday to today),
+    // snap _scoreOffset to stay on the same effective day
+    if(_newBase!==_apiBaseOffset){
+      _scoreOffset+=(_newBase-_apiBaseOffset);
+      _scoreOffset=Math.max(-14,Math.min(17,_scoreOffset));
+      _apiBaseOffset=_newBase;
+    }
+
+    const _eff=_scoreOffset-_apiBaseOffset; // 0=today, 1=tomorrow, -1=yesterday
+
+    if(_apiIsYesterday && _scoreOffset===_apiBaseOffset){
+      // Showing API default which is yesterday
       const _ydLbl=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
       if(ts) ts.textContent='Showing '+_ydLbl;
       if(_navLbl) _navLbl.textContent=_ydLbl;
-      if(_todayBtn) _todayBtn.style.display='none'; // already on API default
+      if(_todayBtn) _todayBtn.style.display='none';
+    } else if(_eff===0){
+      // On today
+      if(ts) ts.textContent='Updated '+tsStr;
+      if(_navLbl) _navLbl.textContent='Today';
+      if(_todayBtn) _todayBtn.style.display='none';
     } else {
-      _apiBaseOffset=0;
-      const _dl=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      if(ts) ts.textContent=_dl;
-      if(_navLbl) _navLbl.textContent=_dl;
+      // On past or future
+      if(ts) ts.textContent=_dateLabel(_scoreOffset);
+      if(_navLbl) _navLbl.textContent=_dateLabel(_scoreOffset);
+      if(_todayBtn) _todayBtn.style.display='inline-block';
     }
-  } else if(_scoreOffset!==0){
-    // User has navigated away from default
-    const _eff=_scoreOffset-_apiBaseOffset; // 0 = "today relative to API"
+  } else {
+    // No gameDate — assume today
+    const _eff=_scoreOffset-_apiBaseOffset;
     if(ts) ts.textContent=_eff===0?'Updated '+tsStr:_dateLabel(_scoreOffset);
     if(_navLbl) _navLbl.textContent=_eff===0?'Today':_dateLabel(_scoreOffset);
     if(_todayBtn) _todayBtn.style.display=_eff!==0?'inline-block':'none';
-  } else {
-    if(ts) ts.textContent='Updated '+tsStr;
-    if(_navLbl) _navLbl.textContent='Today';
-    if(_todayBtn) _todayBtn.style.display='none';
   }
   const raceTs=document.getElementById('race-ts');
   if(raceTs) raceTs.textContent='Live · '+tsStr;
