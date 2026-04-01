@@ -1150,7 +1150,7 @@ function renderClinch(){
       `Threshold: ${t} (${s.pts}pts, ${gp}GP) projects ${proj}pts`,
       `Cutoff = ${t}'s pace (${proj}) + 1 = ~${need}pts`,
       diff>0
-        ? `NYI needs ${diff} more in ${nyiGl} GP · ${ppg}pts/game needed vs ${curPpg} current pace`
+        ? (()=>{ const expPts=Math.round((nyi.pts/nyiGp)*nyiGl); const gap2=diff-expPts; return `NYI needs ${diff}pts in ${nyiGl} GP · current pace earns ~${expPts}pts — need ${gap2>0?gap2+' more than pace':'on pace (+'+Math.abs(gap2)+')'}`; })()
         : `NYI on pace — ${Math.abs(diff)}pts above threshold`,
       tbCtx
     ].filter(Boolean).join(' · ');
@@ -1196,32 +1196,77 @@ function renderClinch(){
     ${nyiSeedNote}
   </div>`;
 
+  // Helper: position-specific probability
+  function posProb(pos){
+    const t=threshTeam(pos); if(!t||!ST[t]) return 1;
+    const nyiP=projPts('NYI'), thP=projPts(t);
+    const gap=nyiP-thP; // positive=NYI ahead
+    // Use same scale as playoffProb but for specific position
+    let p;
+    if(gap>=10) p=98; else if(gap>=7) p=95; else if(gap>=5) p=90;
+    else if(gap>=3) p=82; else if(gap>=1) p=70; else if(gap===0) p=52;
+    else if(gap>=-2) p=35; else if(gap>=-4) p=22; else if(gap>=-6) p=12; else p=5;
+    // TB adjustment when close
+    if(Math.abs(gap)<=1){
+      const edge=tbEdge('NYI',t);
+      if(edge==='ahead') p=Math.min(99,p+8);
+      else if(edge==='behind') p=Math.max(2,p-8);
+    }
+    // SOS
+    const rk=sosRank('NYI');
+    if(rk<=3) p=Math.max(3,p-5); else if(rk>=25) p=Math.min(99,p+3);
+    return Math.round(Math.min(99,Math.max(1,p)));
+  }
+
+  // Helper: pace context — raw pts needed vs expected at current pace
+  function paceContext(diff, gl, gp){
+    if(diff<=0) return '';
+    const curPpg = gp ? (nyi.pts/gp) : 0;
+    const expPts = Math.round(curPpg * gl); // pts NYI would get at current pace
+    const gap2 = diff - expPts; // how many MORE than current pace
+    if(gap2<=0) return `current pace projects +${Math.abs(gap2)}pts over needed`;
+    return `current pace earns ~${expPts}pts — need ${gap2} more than that`;
+  }
+
   [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
     const t=threshTeam(pos); if(!t) return;
+    const s=ST[t];
     const need=projPts(t)+1, diff=need-nyi.pts;
+    const thProj=projPts(t);
+    const pp=posProb(pos);
+    const ppColor=pp>=75?'#4ade80':pp>=45?'#f59e0b':'#f87171';
 
-    // Check if NYI and threshold team project to same pts
-    const nyiProj2=projPts('NYI'), threshProj=projPts(t);
+    // Tiebreaker note — always show when projections are within 2pts
     let tbExtraNote = '';
-    if (nyiProj2 === threshProj) {
-      const edge = tbEdge('NYI', t);
-      const s = ST[t];
-      if (edge === 'ahead') {
-        tbExtraNote = `<div style="font-size:.6rem;color:#4ade80;margin-top:3px">Tied on proj pts — NYI wins TB (RW ${nyi.rw} vs ${s?s.rw:'?'})</div>`;
-      } else if (edge === 'behind') {
-        tbExtraNote = `<div style="font-size:.6rem;color:#f87171;margin-top:3px">Tied on proj pts — ${t} wins TB (RW ${s?s.rw:'?'} vs ${nyi.rw})</div>`;
+    const projGap=projPts('NYI')-thProj;
+    if(Math.abs(projGap)<=2 && s){
+      const edge=tbEdge('NYI',t);
+      const rwDiff=nyi.rw-s.rw, rowDiff=nyi.row-s.row;
+      const tbOrder='TB order: RW → ROW → W';
+      if(edge==='ahead'){
+        tbExtraNote=`<div style="font-size:.58rem;color:#4ade80;margin-top:3px">If tied w/ ${t}: NYI wins Reg Wins tiebreaker (${nyi.rw} vs ${s.rw}) · ${tbOrder}</div>`;
+      } else if(edge==='behind'){
+        tbExtraNote=`<div style="font-size:.58rem;color:#f87171;margin-top:3px">If tied w/ ${t}: ${t} wins Reg Wins tiebreaker (${s.rw} vs ${nyi.rw}) · ${tbOrder}</div>`;
       } else {
-        tbExtraNote = `<div style="font-size:.6rem;color:#fbbf24;margin-top:3px">Proj pts tied — tiebreaker unclear (even RW)</div>`;
+        const rowEdge=nyi.row>s.row?'NYI leads ROW':nyi.row<s.row?`${t} leads ROW`:'ROW also tied';
+        tbExtraNote=`<div style="font-size:.58rem;color:#fbbf24;margin-top:3px">If tied w/ ${t}: RW even (${nyi.rw}) · ${rowEdge} · ${tbOrder}</div>`;
       }
     }
 
+    // Pace context
+    const pace=diff>0?`<div style="font-size:.58rem;color:var(--muted);margin-top:3px">${paceContext(diff,nyiGl,nyiGp)}</div>`:''
+
     const badge=diff<=0
       ?`<span class="cc-badge bdg-good">On pace ✓</span>`
-      :`<span class="cc-badge bdg-need">${diff} more pts</span>`;
+      :`<span class="cc-badge bdg-need">${diff} more pts needed</span>`;
     const pop=popup(pos).replace(/"/g,'&quot;');
     html+=`<div class="cc" data-clinch="${pop}" style="cursor:pointer">
       <div class="cc-lbl">${lbl} <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
-      <div class="cc-val">~${need} pts</div>${badge}${tbExtraNote}</div>`;
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div class="cc-val">~${need} pts</div>
+        <div style="font-size:1.1rem;font-weight:800;color:${ppColor}">${pp}%</div>
+      </div>
+      ${badge}${tbExtraNote}${pace}</div>`;
   });
   row.innerHTML=html;
   const mn=document.getElementById('magic-numbers');
@@ -1233,8 +1278,11 @@ function renderClinch(){
       if(diff<=0){
         lines.push(`<span style="color:#4ade80">✓ ${lbl}</span> — on pace`);
       } else {
+        const nyiGp2=nyi.wins+nyi.losses+nyi.otl;
+        const expPts2=nyiGp2?Math.round((nyi.pts/nyiGp2)*nyiGl):0;
+        const extra=diff-expPts2;
         const winsMin=Math.ceil(diff/2);
-        lines.push(`<span style="color:var(--muted)">${lbl}:</span> need <strong>${diff}pts</strong> in ${nyiGl} games (~${winsMin}+ wins)`);
+        lines.push(`<span style="color:var(--muted)">${lbl}:</span> need <strong>${diff}pts</strong> (pace gives ~${expPts2}, need ${extra>0?extra+' more':'on pace'}) · ~${winsMin}+ wins`);
       }
     });
     mn.innerHTML='<span style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--org)">🎯 Magic Numbers&nbsp;&nbsp;</span>'+lines.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
@@ -1329,7 +1377,7 @@ function renderObservations(){
       ?`Key bubble matchups still to play: <strong>${rvrGames.slice(0,3).join(', ')}</strong>. These games guarantee one rival gets hurt — NYI should track these closely.`
       :'No remaining bubble-vs-bubble games \u2014 every team plays non-rivals down the stretch.'},
     {lbl:'📈 Pace Required',txt:wc2Rival&&ST[wc2Rival]
-      ?`To guarantee finishing ahead of <strong>${wc2Rival}</strong>, NYI needs <strong>${Math.max(0,projPts(wc2Rival)+1-nyi.pts)} more pts</strong> in ${nyiGl} games (${nyiGl?((Math.max(0,projPts(wc2Rival)+1-nyi.pts))/nyiGl).toFixed(2):0} pts/game). NYI's H2H games vs rivals are the most efficient path to those points.`
+      ?(()=>{ const need2=Math.max(0,projPts(wc2Rival)+1-nyi.pts); const expPts=nyiGp?Math.round((nyi.pts/nyiGp)*nyiGl):0; const extra=need2-expPts; return `NYI needs <strong>${need2} more pts</strong> in ${nyiGl} games. Current pace earns ~${expPts}pts — ${extra>0?'need <strong>'+extra+' pts above pace</strong> to clinch':'<strong>already on pace</strong> (+'+Math.abs(extra)+'pts)'}. H2H wins vs rivals are the fastest path there.`; })()
       :'Pace calculation unavailable.'}
   ];
   document.getElementById('wc-obs-cards').innerHTML=wcObs.map(o=>
