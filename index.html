@@ -1200,18 +1200,15 @@ function renderClinch(){
   function posProb(pos){
     const t=threshTeam(pos); if(!t||!ST[t]) return 1;
     const nyiP=projPts('NYI'), thP=projPts(t);
-    const gap=nyiP-thP; // positive=NYI ahead
-    // Use same scale as playoffProb but for specific position
+    const edge=tbEdge('NYI',t);
+    // TB-aware gap: if NYI wins TB, equal proj is a WIN not a tie
+    const tbAwareGap = edge==='ahead' ? nyiP-thP+0.5 : nyiP-thP-0.5;
+    const gap=tbAwareGap;
     let p;
     if(gap>=10) p=98; else if(gap>=7) p=95; else if(gap>=5) p=90;
-    else if(gap>=3) p=82; else if(gap>=1) p=70; else if(gap===0) p=52;
-    else if(gap>=-2) p=35; else if(gap>=-4) p=22; else if(gap>=-6) p=12; else p=5;
-    // TB adjustment when close
-    if(Math.abs(gap)<=1){
-      const edge=tbEdge('NYI',t);
-      if(edge==='ahead') p=Math.min(99,p+8);
-      else if(edge==='behind') p=Math.max(2,p-8);
-    }
+    else if(gap>=3) p=82; else if(gap>=1.5) p=72; else if(gap>=0.5) p=62;
+    else if(gap>=0) p=52; else if(gap>=-1) p=42; else if(gap>=-2) p=32;
+    else if(gap>=-4) p=20; else if(gap>=-6) p=11; else p=5;
     // SOS
     const rk=sosRank('NYI');
     if(rk<=3) p=Math.max(3,p-5); else if(rk>=25) p=Math.min(99,p+3);
@@ -1231,42 +1228,66 @@ function renderClinch(){
   [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
     const t=threshTeam(pos); if(!t) return;
     const s=ST[t];
-    const need=projPts(t)+1, diff=need-nyi.pts;
     const thProj=projPts(t);
+    const edge=tbEdge('NYI',t);
+
+    // Tiebreaker-aware cutline:
+    // If NYI wins TB, same pts is enough. If NYI loses TB, need proj+1.
+    // If tied on RW too, need proj+1 to be safe.
+    const tbAwareCutline = (edge==='ahead') ? thProj : thProj+1;
+    const diff = tbAwareCutline - nyi.pts;
+
     const pp=posProb(pos);
     const ppColor=pp>=75?'#4ade80':pp>=45?'#f59e0b':'#f87171';
 
-    // Tiebreaker note — always show when projections are within 2pts
-    let tbExtraNote = '';
+    // Build rich tooltip content
+    const expPts=nyiGp?Math.round((nyi.pts/nyiGp)*nyiGl):0;
+    const ptsAbovePace=diff-expPts;
+    const paceStr=diff<=0
+      ?`NYI already on pace (+${Math.abs(diff)}pts above cutline)`
+      :`NYI needs ${diff}pts · current pace earns ~${expPts}pts · need ${ptsAbovePace>0?ptsAbovePace+' above pace':'on pace ('+Math.abs(ptsAbovePace)+' buffer)'}`;
+
+    // Tiebreaker detail for tooltip
     const projGap=projPts('NYI')-thProj;
-    if(Math.abs(projGap)<=2 && s){
-      const edge=tbEdge('NYI',t);
-      const rwDiff=nyi.rw-s.rw, rowDiff=nyi.row-s.row;
-      const tbOrder='TB order: RW → ROW → W';
+    let tbDetail='';
+    if(s){
       if(edge==='ahead'){
-        tbExtraNote=`<div style="font-size:.58rem;color:#4ade80;margin-top:3px">If tied w/ ${t}: NYI wins Reg Wins tiebreaker (${nyi.rw} vs ${s.rw}) · ${tbOrder}</div>`;
+        tbDetail=`TB edge: NYI leads Regulation Wins ${nyi.rw}-${s.rw} — same pts as ${t} is enough to hold this spot`;
       } else if(edge==='behind'){
-        tbExtraNote=`<div style="font-size:.58rem;color:#f87171;margin-top:3px">If tied w/ ${t}: ${t} wins Reg Wins tiebreaker (${s.rw} vs ${nyi.rw}) · ${tbOrder}</div>`;
+        tbDetail=`TB deficit: ${t} leads Regulation Wins ${s.rw}-${nyi.rw} — NYI needs 1 extra pt to overcome the tiebreaker`;
       } else {
-        const rowEdge=nyi.row>s.row?'NYI leads ROW':nyi.row<s.row?`${t} leads ROW`:'ROW also tied';
-        tbExtraNote=`<div style="font-size:.58rem;color:#fbbf24;margin-top:3px">If tied w/ ${t}: RW even (${nyi.rw}) · ${rowEdge} · ${tbOrder}</div>`;
+        const rowEdge=nyi.row>s.row?`NYI leads ROW ${nyi.row}-${s.row}`:nyi.row<s.row?`${t} leads ROW ${s.row}-${nyi.row}`:`ROW also tied at ${nyi.row}`;
+        tbDetail=`RW tied at ${nyi.rw} · ${rowEdge} · TB order: RW → ROW → W`;
       }
     }
 
-    // Pace context
-    const pace=diff>0?`<div style="font-size:.58rem;color:var(--muted);margin-top:3px">${paceContext(diff,nyiGl,nyiGp)}</div>`:''
+    const pop=[
+      `${lbl}: need ${tbAwareCutline}pts to finish ahead of ${t} (proj ${thProj}pts)`,
+      paceStr,
+      tbDetail
+    ].filter(Boolean).join(' · ').replace(/"/g,'&quot;');
 
+    // Card content — lean, key info only. Details in tooltip.
     const badge=diff<=0
       ?`<span class="cc-badge bdg-good">On pace ✓</span>`
-      :`<span class="cc-badge bdg-need">${diff} more pts needed</span>`;
-    const pop=popup(pos).replace(/"/g,'&quot;');
+      :`<span class="cc-badge bdg-need">${diff} more pts</span>`;
+
+    // TB indicator on card — compact
+    let tbCard='';
+    if(s && Math.abs(projGap)<=2){
+      if(edge==='ahead') tbCard=`<div style="font-size:.58rem;color:#4ade80;margin-top:3px">RW edge vs ${t} (${nyi.rw}-${s.rw}) ✓</div>`;
+      else if(edge==='behind') tbCard=`<div style="font-size:.58rem;color:#f87171;margin-top:3px">RW deficit vs ${t} (${nyi.rw}-${s.rw}) ✗</div>`;
+    }
+
     html+=`<div class="cc" data-clinch="${pop}" style="cursor:pointer">
       <div class="cc-lbl">${lbl} <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
       <div style="display:flex;align-items:baseline;gap:8px">
-        <div class="cc-val">~${need} pts</div>
+        <div class="cc-val">~${tbAwareCutline} pts</div>
         <div style="font-size:1.1rem;font-weight:800;color:${ppColor}">${pp}%</div>
       </div>
-      ${badge}${tbExtraNote}${pace}</div>`;
+      <div style="font-size:.58rem;color:var(--muted);margin-top:1px">chance of reaching this seed</div>
+      ${badge}${tbCard}
+    </div>`;
   });
   row.innerHTML=html;
   const mn=document.getElementById('magic-numbers');
