@@ -237,6 +237,7 @@ exports.handler = async (event, context) => {
     }
 
     const gamesLeft = 82 - nyi.gp;
+    const today = new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'});
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
     const prompt = `You are AI Butchie Bot — a sharp NHL analyst. Return ONLY a JSON object, nothing else.
@@ -248,7 +249,9 @@ TIEBREAKER SITUATIONS (teams within 5pts of NYI):
 ${tbLines.length ? tbLines.join('\n') : 'None'}
 ${recentStr}${mtlContext}
 
-NYI has ${gamesLeft} games left. Season ends April 16, 2026.
+NYI has ${gamesLeft} games left. Season ends April 16, 2026. Today is ${today}.
+BOS leads WC1 by ${(ST['BOS']?ST['BOS'].pts-nyi.pts:0)} points. Only discuss reclaiming WC1 if that gap is 4 or fewer.
+Only discuss games that have NOT yet been played (future dates only). Do not reference past games as upcoming.
 
 Return this exact JSON structure with NO other text, NO markdown, NO explanation:
 {"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
@@ -262,11 +265,13 @@ METRO insights (exactly 3, about NYI's Metro Division finish):
 - Every insight must contain a specific number
 - Max 2 sentences per insight. Each sentence max 20 words.
 
-WILDCARD insights (exactly 3, about NYI holding a playoff spot):
-- Focus on defending the current position — only discuss gaining WC1 if the gap is 3pts or less
-- Always include: specific pts/game rate NYI needs vs the most dangerous bubble team
-- Always include: the most impactful rival-vs-rival game coming up and exactly why it helps
-- Always include: the single most dangerous remaining threat with exact numbers
+WILDCARD insights (exactly 3, COMPLETELY DIFFERENT from metro insights):
+- DO NOT repeat any point made in the metro section
+- Focus ONLY on the WC race: OTT, DET, PHI bubble threats vs NYI
+- Include: specific pts/game rate NYI needs to hold off the top bubble team
+- Include: the most impactful upcoming rival-vs-rival game (two bubble teams playing each other) and the date
+- Include: which bubble team has the most favorable remaining schedule and exactly why
+- Only mention BOS/WC1 if the gap is 4pts or less
 - Max 2 sentences per insight. Each sentence max 20 words.
 
 CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
