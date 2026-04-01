@@ -238,6 +238,25 @@ exports.handler = async (event, context) => {
 
     const gamesLeft = 82 - nyi.gp;
     const today = new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'});
+
+    // NYI remaining schedule (hardcoded, filter out played games using GP count)
+    // Full season schedule from baked-in data — filter to only future games
+    const NYI_FULL_SCHED = [
+      ['Mar 30','PIT','H'],['Mar 31','BUF','A'],['Apr 3','PHI','H'],
+      ['Apr 4','CAR','A'],['Apr 9','TOR','H'],['Apr 11','OTT','H'],
+      ['Apr 12','MTL','H'],['Apr 14','CAR','H']
+    ];
+    const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5};
+    const todayET = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+    const todayOnly = new Date(todayET.getFullYear(), todayET.getMonth(), todayET.getDate());
+    const nyiRemaining = NYI_FULL_SCHED.filter(g => {
+      const p = g[0].split(' ');
+      const gd = new Date(2026, MONTHS[p[0]], parseInt(p[1]));
+      return gd >= todayOnly;
+    });
+    const RACE_TEAMS = new Set(['BOS','CBJ','DET','MTL','NYI','OTT','PHI','PIT']);
+    const nyiH2H = nyiRemaining.filter(g => RACE_TEAMS.has(g[1]));
+    const nyiSchedStr = nyiRemaining.map(g => `${g[0]}: ${g[2]==='H'?'vs':'@'}${g[1]}${RACE_TEAMS.has(g[1])?' [RIVAL]':''}`).join(', ');
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
     const prompt = `You are AI Butchie Bot — a sharp NHL analyst. Return ONLY a JSON object, nothing else.
@@ -251,18 +270,20 @@ ${recentStr}${mtlContext}
 
 NYI has ${gamesLeft} games left. Season ends April 16, 2026. Today is ${today}.
 BOS leads WC1 by ${(ST['BOS']?ST['BOS'].pts-nyi.pts:0)} points. Only discuss reclaiming WC1 if that gap is 4 or fewer.
-Only discuss games that have NOT yet been played (future dates only). Do not reference past games as upcoming.
+
+NYI REMAINING SCHEDULE (${gamesLeft} games): ${nyiSchedStr}
+NYI H2H GAMES vs RIVALS remaining: ${nyiH2H.length ? nyiH2H.map(g=>g[0]+' '+(g[2]==='H'?'vs':'@')+g[1]).join(', ') : 'None'}
+
+ONLY reference games listed above as upcoming. NEVER invent or assume games not on this list.
 
 Return this exact JSON structure with NO other text, NO markdown, NO explanation:
 {"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
 METRO insights (exactly 3, about NYI's Metro Division finish):
-- ONLY discuss reclaiming Metro #2 if the gap to PIT is 3pts or less — otherwise focus ONLY on holding Metro #3
-- Always include the tiebreaker situation using the RW/ROW data above (NHL order: pts% → RW → ROW → W → H2H)
-- Include raw pts NYI needs (e.g. '9 more pts in 6 games') and how that compares to current pace (e.g. 'current pace earns ~7pts, need 2 above pace')
-- Focus on the most important upcoming H2H game for seeding
-- DO NOT state things visible at a glance
-- Every insight must contain a specific number
+- Insight 1: TIEBREAKER STATUS — who leads REGULATION WINS (RW) right now between NYI and PIT, the exact RW numbers, and what that means (RW is the FIRST tiebreaker — if pts are tied, whoever leads RW wins the spot). Do NOT mention ROW unless RW is tied.
+- Insight 2: RAW POINTS NEEDED — exactly how many pts NYI needs over ${gamesLeft} remaining games to hold Metro #3, vs what current pace projects. Be specific with numbers.
+- Insight 3: UPCOMING H2H — reference only games from the NYI REMAINING SCHEDULE above. State the exact date and opponent. Explain the playoff seeding impact.
+- NEVER mention a game not on the NYI REMAINING SCHEDULE list above
 - Max 2 sentences per insight. Each sentence max 20 words.
 
 WILDCARD insights (exactly 3, COMPLETELY DIFFERENT from metro insights):
