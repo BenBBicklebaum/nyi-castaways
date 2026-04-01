@@ -1601,7 +1601,7 @@ function _renderScores(games){
       // API is still on yesterday — show the date, not "Today"
       const _gd=new Date(_gameDate+'T12:00:00');
       const _ydLbl=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      if(ts) ts.textContent='Showing '+_ydLbl;
+      if(ts) ts.textContent='Showing '+_ydLbl+' · press › for today';
       if(_navLbl) _navLbl.textContent=_ydLbl;
     } else {
       if(ts) ts.textContent='Updated '+tsStr;
