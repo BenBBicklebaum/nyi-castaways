@@ -257,6 +257,23 @@ exports.handler = async (event, context) => {
     const RACE_TEAMS = new Set(['BOS','CBJ','DET','MTL','NYI','OTT','PHI','PIT']);
     const nyiH2H = nyiRemaining.filter(g => RACE_TEAMS.has(g[1]));
     const nyiSchedStr = nyiRemaining.map(g => `${g[0]}: ${g[2]==='H'?'vs':'@'}${g[1]}${RACE_TEAMS.has(g[1])?' [RIVAL]':''}`).join(', ');
+
+    // Bubble team remaining schedules for WC analysis
+    const BUBBLE_SCHEDS = {
+      OTT: [['Mar 29','BOS','H'],['Apr 1','BUF','H'],['Apr 3','WSH','A'],['Apr 5','BOS','A'],['Apr 7','CBJ','H'],['Apr 9','DET','A'],['Apr 11','NYI','A'],['Apr 14','TBL','A']],
+      DET: [['Mar 29','NJD','H'],['Apr 1','CBJ','A'],['Apr 2','PHI','H'],['Apr 4','WSH','H'],['Apr 7','CBJ','H'],['Apr 9','OTT','H'],['Apr 11','BUF','A'],['Apr 14','TOR','H']],
+      PHI: [['Mar 30','TOR','A'],['Apr 2','DET','A'],['Apr 3','NYI','A'],['Apr 5','BOS','H'],['Apr 7','NJD','H'],['Apr 10','WSH','H'],['Apr 12','CBJ','A'],['Apr 14','MTL','H']]
+    };
+    const bubbleSchedStr = Object.entries(BUBBLE_SCHEDS).map(([t, sched]) => {
+      const tGp = ST[t] ? ST[t].wins+ST[t].losses+ST[t].otl : 0;
+      const tGl = 82-tGp;
+      const rem = sched.filter(g => {
+        const p = g[0].split(' ');
+        const gd = new Date(2026, MONTHS[p[0]], parseInt(p[1]));
+        return gd >= todayOnly;
+      }).slice(0, tGl);
+      return `${t} remaining: ${rem.map(g=>`${g[0]} ${g[2]==='H'?'vs':'@'}${g[1]}`).join(', ')}`;
+    }).join('\n');
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
     const prompt = `You are AI Butchie Bot — a sharp NHL analyst. Return ONLY a JSON object, nothing else.
@@ -276,6 +293,9 @@ NYI H2H GAMES vs RIVALS remaining: ${nyiH2H.length ? nyiH2H.map(g=>g[0]+' '+(g[2
 
 ONLY reference games listed above as upcoming. NEVER invent or assume games not on this list.
 
+BUBBLE TEAM SCHEDULES (for WC analysis):
+${bubbleSchedStr}
+
 Return this exact JSON structure with NO other text, NO markdown, NO explanation:
 {"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
@@ -288,11 +308,10 @@ METRO insights (exactly 3, about NYI's Metro Division finish):
 
 WILDCARD insights (exactly 3, COMPLETELY DIFFERENT from metro insights):
 - DO NOT repeat any point made in the metro section
-- Focus ONLY on the WC race: OTT, DET, PHI bubble threats vs NYI
-- Include: specific pts/game rate NYI needs to hold off the top bubble team
-- Include: the most impactful upcoming rival-vs-rival game (two bubble teams playing each other) and the date
-- Include: which bubble team has the most favorable remaining schedule and exactly why
-- Only mention BOS/WC1 if the gap is 4pts or less
+- Insight 1: RAW POINTS — how many pts NYI needs to hold off the closest bubble team (OTT/DET/PHI), vs what NYI's current pace projects over ${gamesLeft} games. Use format: 'NYI needs X pts in Y games; current pace earns ~Z pts'. NO pts/game rates.
+- Insight 2: RIVAL-VS-RIVAL — identify the single most impactful upcoming game between two bubble teams. State the exact date and teams from the STANDINGS DATA above. Explain exactly how it helps NYI (one rival must lose).
+- Insight 3: SCHEDULE ADVANTAGE — which bubble team has the easiest remaining schedule and why it makes them dangerous (or which has the hardest and why it helps NYI). Be specific about opponents.
+- Only mention BOS/WC1 if gap is 4pts or less
 - Max 2 sentences per insight. Each sentence max 20 words.
 
 CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
