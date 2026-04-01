@@ -1080,32 +1080,46 @@ function playoffProb(){
     return ptsDiff + tbAdj + rvrBoost;
   }
 
-  // Best path: Metro #3 or WC2
-  const wc2Gap  = wcp[2] ? effectiveGap(wcp[2])  - 1 : 999;
-  const met3Gap = met[3] ? effectiveGap(met[3]) - 1 : 999;
-  const bestGap = Math.max(wc2Gap, met3Gap);
+  // Find the EASIEST path into playoffs for NYI:
+  // Compare what NYI needs to project to claim Metro #3 vs WC2
+  // Take whichever requires fewer points (lower cutline = easier path)
+  // Then calculate probability along that single best path
 
-  if(bestGap >= 999) return 99;
-  const gap = bestGap;
+  function firstNonNYI(arr,i){for(let j=i;j<arr.length;j++)if(arr[j]&&arr[j]!=='NYI')return arr[j];return null;}
+  const wc2Team  = firstNonNYI(wcp,1); // current WC2 holder
+  const met3Team = firstNonNYI(met,2); // current Metro#3 holder
+
+  // TB-aware cutline for each path (if NYI holds TB, equal pts is enough)
+  function tbCutline(t){
+    if(!t||!ST[t]) return 999;
+    const edge=tbEdge('NYI',t);
+    return edge==='ahead' ? projPts(t) : projPts(t)+1;
+  }
+
+  const wc2Cut  = tbCutline(wc2Team);
+  const met3Cut = tbCutline(met3Team);
+
+  // Best path = whichever cutline is LOWER (easier for NYI to reach)
+  const bestCutline = Math.min(wc2Cut, met3Cut);
+  const bestTeam    = wc2Cut <= met3Cut ? wc2Team : met3Team;
+  if(!bestTeam||!ST[bestTeam]) return 99;
+
+  // Gap between NYI projection and the best cutline
+  const edge = tbEdge('NYI', bestTeam);
+  const tbAwareGap = edge==='ahead' ? nyiProj-projPts(bestTeam)+0.5 : nyiProj-projPts(bestTeam)-0.5;
 
   // Map gap to probability
   let prob;
-  if(gap >= 10) prob = 98;
-  else if(gap >= 7) prob = 95;
-  else if(gap >= 5) prob = 90;
-  else if(gap >= 3) prob = 82;
-  else if(gap >= 1) prob = 70;
-  else if(gap === 0) prob = 55;
-  else if(gap >= -2) prob = 40;
-  else if(gap >= -4) prob = 27;
-  else if(gap >= -6) prob = 15;
-  else prob = 7;
+  if(tbAwareGap>=10) prob=98; else if(tbAwareGap>=7) prob=95; else if(tbAwareGap>=5) prob=90;
+  else if(tbAwareGap>=3) prob=82; else if(tbAwareGap>=1.5) prob=72; else if(tbAwareGap>=0.5) prob=62;
+  else if(tbAwareGap>=0) prob=52; else if(tbAwareGap>=-1) prob=42; else if(tbAwareGap>=-2) prob=32;
+  else if(tbAwareGap>=-4) prob=20; else if(tbAwareGap>=-6) prob=11; else prob=5;
 
-  // SOS adjustment
+  // Adjust for SOS
   const rank=sosRank('NYI');
-  if(rank<=3) prob=Math.max(4,prob-6);
-  else if(rank<=8) prob=Math.max(4,prob-3);
-  else if(rank>=24) prob=Math.min(99,prob+3);
+  if(rank<=3) prob=Math.max(3,prob-6);
+  else if(rank<=8) prob=Math.max(3,prob-3);
+  else if(rank>=25) prob=Math.min(99,prob+3);
 
   // Fewer games = more certainty either way
   if(nyiGl<=3) prob=prob>50?Math.min(99,prob+8):Math.max(2,prob-8);
@@ -1150,7 +1164,7 @@ function renderClinch(){
       `Threshold: ${t} (${s.pts}pts, ${gp}GP) projects ${proj}pts`,
       `Cutoff = ${t}'s pace (${proj}) + 1 = ~${need}pts`,
       diff>0
-        ? `NYI needs ${diff} more in ${nyiGl} GP · ${ppg}pts/game needed vs ${curPpg} current pace`
+        ? (()=>{ const expPts=Math.round((nyi.pts/nyiGp)*nyiGl); const gap2=diff-expPts; return `NYI needs ${diff}pts in ${nyiGl} GP · current pace earns ~${expPts}pts — need ${gap2>0?gap2+' more than pace':'on pace (+'+Math.abs(gap2)+')'}`; })()
         : `NYI on pace — ${Math.abs(diff)}pts above threshold`,
       tbCtx
     ].filter(Boolean).join(' · ');
@@ -1176,11 +1190,19 @@ function renderClinch(){
   const bestCutTeam = (wc2Cut !== null && wc2Cut <= (met3Cut||999)) ? wcp[2] : met[3];
   const gap = nyiProj - bestCut;
   const sosRankVal = sosRank('NYI');
+  // Determine best path for tooltip
+  const _wc2T  = wcp[1]&&wcp[1]!=='NYI'?wcp[1]:wcp[2];
+  const _met3T = met[2]&&met[2]!=='NYI'?met[2]:met[3];
+  const _wc2Cut  = _wc2T  ? (tbEdge('NYI',_wc2T) ==='ahead'?projPts(_wc2T):projPts(_wc2T)+1) : 999;
+  const _met3Cut = _met3T ? (tbEdge('NYI',_met3T)==='ahead'?projPts(_met3T):projPts(_met3T)+1) : 999;
+  const _bestPath = _wc2Cut <= _met3Cut ? `WC2 via ${_wc2T} (need ${_wc2Cut}pts)` : `Metro #3 via ${_met3T} (need ${_met3Cut}pts)`;
+  const _easierCut = Math.min(_wc2Cut,_met3Cut);
+  const _probGap = nyiProj - _easierCut;
   const probPopup = [
-    `NYI projects ${nyiProj}pts · cutline set by ${bestCutTeam} pace (${bestCut}pts needed)`,
-    `Projected gap: ${gap>=0?'+':''}${gap}pts vs cutline · ${nyiGl} games remaining`,
-    `SOS adjustment: NYI has #${sosRankVal} hardest remaining schedule (1=hardest)`,
-    `Probability reflects pace projection + schedule difficulty + games left`
+    `Best path: ${_bestPath}`,
+    `NYI projects ${nyiProj}pts · gap vs cutline: ${_probGap>=0?'+':''}${_probGap}pts · ${nyiGl} games left`,
+    `SOS: #${sosRankVal} hardest schedule · tiebreaker factored in`,
+    `Probability = chance NYI finishes ahead of cutline team on easiest available path`
   ].join(' · ');
 
   let html=`<div class="cc cc-prob" data-clinch="${probPopup.replace(/"/g,'&quot;')}" style="cursor:pointer">
@@ -1196,45 +1218,122 @@ function renderClinch(){
     ${nyiSeedNote}
   </div>`;
 
+  // Helper: position-specific probability
+  function posProb(pos){
+    const t=threshTeam(pos); if(!t||!ST[t]) return 1;
+    const nyiP=projPts('NYI'), thP=projPts(t);
+    const edge=tbEdge('NYI',t);
+    // TB-aware gap: if NYI wins TB, equal proj is a WIN not a tie
+    const tbAwareGap = edge==='ahead' ? nyiP-thP+0.5 : nyiP-thP-0.5;
+    const gap=tbAwareGap;
+    let p;
+    if(gap>=10) p=98; else if(gap>=7) p=95; else if(gap>=5) p=90;
+    else if(gap>=3) p=82; else if(gap>=1.5) p=72; else if(gap>=0.5) p=62;
+    else if(gap>=0) p=52; else if(gap>=-1) p=42; else if(gap>=-2) p=32;
+    else if(gap>=-4) p=20; else if(gap>=-6) p=11; else p=5;
+    // SOS
+    const rk=sosRank('NYI');
+    if(rk<=3) p=Math.max(3,p-5); else if(rk>=25) p=Math.min(99,p+3);
+    return Math.round(Math.min(99,Math.max(1,p)));
+  }
+
+  // Helper: pace context — raw pts needed vs expected at current pace
+  function paceContext(diff, gl, gp){
+    if(diff<=0) return '';
+    const curPpg = gp ? (nyi.pts/gp) : 0;
+    const expPts = Math.round(curPpg * gl); // pts NYI would get at current pace
+    const gap2 = diff - expPts; // how many MORE than current pace
+    if(gap2<=0) return `current pace projects +${Math.abs(gap2)}pts over needed`;
+    return `current pace earns ~${expPts}pts — need ${gap2} more than that`;
+  }
+
   [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
     const t=threshTeam(pos); if(!t) return;
-    const need=projPts(t)+1, diff=need-nyi.pts;
+    const s=ST[t];
+    const thProj=projPts(t);
+    const edge=tbEdge('NYI',t);
 
-    // Check if NYI and threshold team project to same pts
-    const nyiProj2=projPts('NYI'), threshProj=projPts(t);
-    let tbExtraNote = '';
-    if (nyiProj2 === threshProj) {
-      const edge = tbEdge('NYI', t);
-      const s = ST[t];
-      if (edge === 'ahead') {
-        tbExtraNote = `<div style="font-size:.6rem;color:#4ade80;margin-top:3px">Tied on proj pts — NYI wins TB (RW ${nyi.rw} vs ${s?s.rw:'?'})</div>`;
-      } else if (edge === 'behind') {
-        tbExtraNote = `<div style="font-size:.6rem;color:#f87171;margin-top:3px">Tied on proj pts — ${t} wins TB (RW ${s?s.rw:'?'} vs ${nyi.rw})</div>`;
+    // Tiebreaker-aware cutline:
+    // If NYI wins TB, same pts is enough. If NYI loses TB, need proj+1.
+    // If tied on RW too, need proj+1 to be safe.
+    const tbAwareCutline = (edge==='ahead') ? thProj : thProj+1;
+    const diff = tbAwareCutline - nyi.pts;
+
+    const pp=posProb(pos);
+    const ppColor=pp>=75?'#4ade80':pp>=45?'#f59e0b':'#f87171';
+
+    // Build rich tooltip content
+    const expPts=nyiGp?Math.round((nyi.pts/nyiGp)*nyiGl):0;
+    const ptsAbovePace=diff-expPts;
+    const paceStr=diff<=0
+      ?`NYI already on pace (+${Math.abs(diff)}pts above cutline)`
+      :`NYI needs ${diff}pts · current pace earns ~${expPts}pts · need ${ptsAbovePace>0?ptsAbovePace+' above pace':'on pace ('+Math.abs(ptsAbovePace)+' buffer)'}`;
+
+    // Tiebreaker detail for tooltip
+    const projGap=projPts('NYI')-thProj;
+    let tbDetail='';
+    if(s){
+      if(edge==='ahead'){
+        tbDetail=`TB edge: NYI leads Regulation Wins ${nyi.rw}-${s.rw} — same pts as ${t} is enough to hold this spot`;
+      } else if(edge==='behind'){
+        tbDetail=`TB deficit: ${t} leads Regulation Wins ${s.rw}-${nyi.rw} — NYI needs 1 extra pt to overcome the tiebreaker`;
       } else {
-        tbExtraNote = `<div style="font-size:.6rem;color:#fbbf24;margin-top:3px">Proj pts tied — tiebreaker unclear (even RW)</div>`;
+        const rowEdge=nyi.row>s.row?`NYI leads ROW ${nyi.row}-${s.row}`:nyi.row<s.row?`${t} leads ROW ${s.row}-${nyi.row}`:`ROW also tied at ${nyi.row}`;
+        tbDetail=`RW tied at ${nyi.rw} · ${rowEdge} · TB order: RW → ROW → W`;
       }
     }
 
+    const pop=[
+      `${lbl}: need ${tbAwareCutline}pts to finish ahead of ${t} (proj ${thProj}pts)`,
+      paceStr,
+      tbDetail
+    ].filter(Boolean).join(' · ').replace(/"/g,'&quot;');
+
+    // Card content — lean, key info only. Details in tooltip.
     const badge=diff<=0
       ?`<span class="cc-badge bdg-good">On pace ✓</span>`
       :`<span class="cc-badge bdg-need">${diff} more pts</span>`;
-    const pop=popup(pos).replace(/"/g,'&quot;');
+
+    // TB note on card — only when projection gap is tight (within 2pts)
+    let tbCard='';
+    if(s && Math.abs(projGap)<=2){
+      if(edge==='ahead'){
+        tbCard=`<div style="font-size:.58rem;color:#4ade80;margin-top:3px">Tiebreaker held vs ${t} — tied pts = NYI advances</div>`;
+      } else if(edge==='behind'){
+        tbCard=`<div style="font-size:.58rem;color:#f87171;margin-top:3px">Tiebreaker deficit vs ${t} — need 1 extra pt to pass them</div>`;
+      } else {
+        tbCard=`<div style="font-size:.58rem;color:#fbbf24;margin-top:3px">Tiebreaker even with ${t} — next TB stat: ROW (NYI ${nyi.row} vs ${t} ${s.row})</div>`;
+      }
+    }
+
     html+=`<div class="cc" data-clinch="${pop}" style="cursor:pointer">
       <div class="cc-lbl">${lbl} <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
-      <div class="cc-val">~${need} pts</div>${badge}${tbExtraNote}</div>`;
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div class="cc-val">~${tbAwareCutline} pts</div>
+        <div style="font-size:1.1rem;font-weight:800;color:${ppColor}">${pp}%</div>
+      </div>
+      <div style="font-size:.58rem;color:var(--muted);margin-top:1px">chance of reaching this seed</div>
+      ${badge}${tbCard}
+    </div>`;
   });
   row.innerHTML=html;
   const mn=document.getElementById('magic-numbers');
   if(mn){
     const lines=[];
     [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
-      const t=threshTeam(pos); if(!t) return;
-      const need=projPts(t)+1, diff=need-nyi.pts;
-      if(diff<=0){
-        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span> — on pace`);
+      const t=threshTeam(pos); if(!t||!ST[t]) return;
+      const s=ST[t];
+      const rivalGp=s.wins+s.losses+s.otl, rivalGl=82-rivalGp;
+      const rivalMax=s.pts+rivalGl*2; // max pts rival can possibly reach
+      const edge=tbEdge('NYI',t);
+      // Magic number: points combo NYI+rival need to guarantee NYI finishes ahead
+      // = rivalMax - nyi.pts + 1, minus 1 if NYI holds tiebreaker
+      const tbBonus = edge==='ahead'?1:0; // if NYI wins TB, tie is enough
+      const magic = rivalMax - nyi.pts + 1 - tbBonus;
+      if(magic<=0){
+        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span> clinched vs ${t}`);
       } else {
-        const winsMin=Math.ceil(diff/2);
-        lines.push(`<span style="color:var(--muted)">${lbl}:</span> need <strong>${diff}pts</strong> in ${nyiGl} games (~${winsMin}+ wins)`);
+        lines.push(`<span style="color:var(--muted)">${lbl}:</span> <strong>MN ${magic}</strong> vs ${t}${tbBonus?' (TB✓)':''}`);
       }
     });
     mn.innerHTML='<span style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--org)">🎯 Magic Numbers&nbsp;&nbsp;</span>'+lines.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
@@ -1329,7 +1428,7 @@ function renderObservations(){
       ?`Key bubble matchups still to play: <strong>${rvrGames.slice(0,3).join(', ')}</strong>. These games guarantee one rival gets hurt — NYI should track these closely.`
       :'No remaining bubble-vs-bubble games \u2014 every team plays non-rivals down the stretch.'},
     {lbl:'📈 Pace Required',txt:wc2Rival&&ST[wc2Rival]
-      ?`To guarantee finishing ahead of <strong>${wc2Rival}</strong>, NYI needs <strong>${Math.max(0,projPts(wc2Rival)+1-nyi.pts)} more pts</strong> in ${nyiGl} games (${nyiGl?((Math.max(0,projPts(wc2Rival)+1-nyi.pts))/nyiGl).toFixed(2):0} pts/game). NYI's H2H games vs rivals are the most efficient path to those points.`
+      ?(()=>{ const need2=Math.max(0,projPts(wc2Rival)+1-nyi.pts); const expPts=nyiGp?Math.round((nyi.pts/nyiGp)*nyiGl):0; const extra=need2-expPts; return `NYI needs <strong>${need2} more pts</strong> in ${nyiGl} games. Current pace earns ~${expPts}pts — ${extra>0?'need <strong>'+extra+' pts above pace</strong> to clinch':'<strong>already on pace</strong> (+'+Math.abs(extra)+'pts)'}. H2H wins vs rivals are the fastest path there.`; })()
       :'Pace calculation unavailable.'}
   ];
   document.getElementById('wc-obs-cards').innerHTML=wcObs.map(o=>
@@ -1588,54 +1687,30 @@ function _renderScores(games){
   }).join('');
   const now=new Date();
   const tsStr=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZoneName:'short'});
-  // Detect what date the API actually returned
+  // Update nav label and timestamp based on current offset vs API base
   const _gameDates=(filtered||[]).map(g=>g.gameDate).filter(Boolean);
   const _gameDate=_gameDates[0];
   const _navLbl=document.getElementById('sc-nav-date');
   const _todayBtn=document.getElementById('sc-today-btn');
+  const _eff=_scoreOffset-_apiBaseOffset; // 0=today, positive=future, negative=past
 
-  // Always re-detect what date the API is actually on
-  if(_gameDate){
-    const _gd=new Date(_gameDate+'T12:00:00');
-    const _today=todayDate();
-    const _yest=new Date(_today); _yest.setDate(_yest.getDate()-1);
-    const _apiIsYesterday=_gd.toDateString()===_yest.toDateString();
-    const _apiIsToday=_gd.toDateString()===_today.toDateString();
-    const _newBase=_apiIsYesterday?-1:0;
-
-    // If API base shifted (e.g. API updated from yesterday to today),
-    // snap _scoreOffset to stay on the same effective day
-    if(_newBase!==_apiBaseOffset){
-      _scoreOffset+=(_newBase-_apiBaseOffset);
-      _scoreOffset=Math.max(-14,Math.min(17,_scoreOffset));
-      _apiBaseOffset=_newBase;
-    }
-
-    const _eff=_scoreOffset-_apiBaseOffset; // 0=today, 1=tomorrow, -1=yesterday
-
-    if(_apiIsYesterday && _scoreOffset===_apiBaseOffset){
-      // Showing API default which is yesterday
+  if(_eff===0){
+    // On "today" (whatever the API considers current)
+    if(_apiBaseOffset===-1 && _gameDate){
+      // API is still on yesterday — show the date, not "Today"
+      const _gd=new Date(_gameDate+'T12:00:00');
       const _ydLbl=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-      if(ts) ts.textContent='Showing '+_ydLbl;
+      if(ts) ts.textContent='Showing '+_ydLbl+' · press › for today';
       if(_navLbl) _navLbl.textContent=_ydLbl;
-      if(_todayBtn) _todayBtn.style.display='none';
-    } else if(_eff===0){
-      // On today
+    } else {
       if(ts) ts.textContent='Updated '+tsStr;
       if(_navLbl) _navLbl.textContent='Today';
-      if(_todayBtn) _todayBtn.style.display='none';
-    } else {
-      // On past or future
-      if(ts) ts.textContent=_dateLabel(_scoreOffset);
-      if(_navLbl) _navLbl.textContent=_dateLabel(_scoreOffset);
-      if(_todayBtn) _todayBtn.style.display='inline-block';
     }
+    if(_todayBtn) _todayBtn.style.display='none';
   } else {
-    // No gameDate — assume today
-    const _eff=_scoreOffset-_apiBaseOffset;
-    if(ts) ts.textContent=_eff===0?'Updated '+tsStr:_dateLabel(_scoreOffset);
-    if(_navLbl) _navLbl.textContent=_eff===0?'Today':_dateLabel(_scoreOffset);
-    if(_todayBtn) _todayBtn.style.display=_eff!==0?'inline-block':'none';
+    if(ts) ts.textContent=_dateLabel(_scoreOffset);
+    if(_navLbl) _navLbl.textContent=_dateLabel(_scoreOffset);
+    if(_todayBtn) _todayBtn.style.display='inline-block';
   }
   const raceTs=document.getElementById('race-ts');
   if(raceTs) raceTs.textContent='Live · '+tsStr;
@@ -1670,7 +1745,6 @@ function _renderScores(games){
 
 async function _fetchScores(){
   try{
-    // effectiveOffset=0 means "today relative to API" — always use /score/now for that
     const _eff=_scoreOffset-_apiBaseOffset;
     const url=_eff===0
       ?'/.netlify/functions/nhl?type=scores'
@@ -1678,7 +1752,24 @@ async function _fetchScores(){
     const r=await fetch(url);
     if(!r.ok) throw new Error(r.status);
     const d=await r.json();
-    _renderScores(d.games||[]);
+    const games=d.games||[];
+
+    // Detect API base: when fetching /score/now, check what date came back
+    if(_eff===0 && games.length>0){
+      const firstDate=games[0].gameDate;
+      if(firstDate){
+        const apiDate=new Date(firstDate+'T12:00:00');
+        const today=todayDate();
+        const yest=new Date(today); yest.setDate(yest.getDate()-1);
+        if(apiDate.toDateString()===yest.toDateString()){
+          _apiBaseOffset=-1; // API is a day behind
+        } else {
+          _apiBaseOffset=0;  // API is on today
+        }
+      }
+    }
+
+    _renderScores(games);
   }catch(e){
     console.warn('Scores:',e.message);
     const ts=document.getElementById('sc-ts');
@@ -1821,13 +1912,9 @@ async function loadAll(){
   renderObservations();
   renderDeepInsights();
   renderField();
-  _scoreOffset = 0;
-  const _navLbl=document.getElementById('sc-nav-date');
-  if(_navLbl) _navLbl.textContent='Today';
   _scoreOffset=0;
-  const _navEl=document.getElementById('sc-nav-date');
-  if(_navEl) _navEl.textContent='Today';
-  _fetchScores();
+  _apiBaseOffset=0;
+  _fetchScores(); // will detect API date and set labels correctly
   if(_scoreTimer) clearInterval(_scoreTimer);
   _scoreTimer=setInterval(_fetchScores,60000);
 }
