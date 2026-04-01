@@ -1670,8 +1670,9 @@ function _renderScores(games){
 
 async function _fetchScores(){
   try{
-    // Use /score/now for today (always current), date endpoint for past/future
-    const url=_scoreOffset===0
+    // effectiveOffset=0 means "today relative to API" — always use /score/now for that
+    const _eff=_scoreOffset-_apiBaseOffset;
+    const url=_eff===0
       ?'/.netlify/functions/nhl?type=scores'
       :'/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_scoreOffset);
     const r=await fetch(url);
