@@ -299,20 +299,23 @@ ${bubbleSchedStr}
 Return this exact JSON structure with NO other text, NO markdown, NO explanation:
 {"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
-METRO insights (exactly 3, about NYI's Metro Division finish):
-- Insight 1: TIEBREAKER STATUS — who leads REGULATION WINS (RW) right now between NYI and PIT, the exact RW numbers, and what that means (RW is the FIRST tiebreaker — if pts are tied, whoever leads RW wins the spot). Do NOT mention ROW unless RW is tied.
-- Insight 2: RAW POINTS NEEDED — exactly how many pts NYI needs over ${gamesLeft} remaining games to hold Metro #3, vs what current pace projects. Be specific with numbers.
-- Insight 3: UPCOMING H2H — reference only games from the NYI REMAINING SCHEDULE above. State the exact date and opponent. Explain the playoff seeding impact.
-- NEVER mention a game not on the NYI REMAINING SCHEDULE list above
-- Max 2 sentences per insight. Each sentence max 20 words.
+METRO insights (exactly 3). These must go BEYOND what the standings show — synthesize multiple data points to reveal something non-obvious:
 
-WILDCARD insights (exactly 3, COMPLETELY DIFFERENT from metro insights):
-- DO NOT repeat any point made in the metro section
-- Insight 1: RAW POINTS — how many pts NYI needs to hold off the closest bubble team (OTT/DET/PHI), vs what NYI's current pace projects over ${gamesLeft} games. Use format: 'NYI needs X pts in Y games; current pace earns ~Z pts'. NO pts/game rates.
-- Insight 2: RIVAL-VS-RIVAL — identify the single most impactful upcoming game between two bubble teams. State the exact date and teams from the STANDINGS DATA above. Explain exactly how it helps NYI (one rival must lose).
-- Insight 3: SCHEDULE ADVANTAGE — which bubble team has the easiest remaining schedule and why it makes them dangerous (or which has the hardest and why it helps NYI). Be specific about opponents.
-- Only mention BOS/WC1 if gap is 4pts or less
-- Max 2 sentences per insight. Each sentence max 20 words.
+- Insight 1 MUST be about the RW tiebreaker vs PIT specifically: state who leads RW now, by how much, AND calculate what NYI needs to do in remaining games to project a RW lead at season end (estimate: ~55% of wins come in regulation). If PIT leads RW now, how many regulation wins does NYI need? Be precise.
+- Insight 2 MUST be a scenario analysis: "If NYI goes X-Y in remaining games, they finish with ~Z pts, which [holds/loses] Metro #3 because [rival] would need to go [W-L] to catch them." Pick the most realistic scenario.
+- Insight 3 MUST analyze a specific upcoming game from NYI REMAINING SCHEDULE and its DUAL impact — both the direct pts AND the tiebreaker implications. E.g. a win vs OTT on Apr 11 adds 2pts AND hurts OTT directly.
+- NEVER mention PIT in the wildcard section — PIT is a Metro team, not WC
+- NEVER restate anything already shown in the standings
+- Max 2 sentences. Every sentence must contain a number.
+
+WILDCARD insights (exactly 3). Completely separate from metro — about the WC bubble race only. Must surface non-obvious findings:
+
+- Insight 1 MUST be a convergence scenario: given NYI's remaining schedule and OTT/DET/PHI remaining schedules from BUBBLE TEAM SCHEDULES above, calculate: if everyone plays at current pace, what's the projected final gap between NYI and the most dangerous team? Is NYI's current pts lead enough?
+- Insight 2 MUST identify a specific rival-vs-rival game from BUBBLE TEAM SCHEDULES that creates a zero-sum outcome. State the date, teams, and the exact math: "If [A] beats [B], NYI's effective lead grows to X pts because..."
+- Insight 3 MUST identify something counterintuitive: e.g. which rival is actually MORE dangerous than their current pts suggest (due to schedule, pace, H2H games remaining), OR which is less dangerous than they appear. Show the math.
+- NEVER use pts/game rates — always say "X pts in Y games"
+- NEVER mention PIT in the wildcard section
+- Max 2 sentences. Every sentence must contain a number.
 
 CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
 
