@@ -259,7 +259,7 @@ Return this exact JSON structure with NO other text, NO markdown, NO explanation
 METRO insights (exactly 3, about NYI's Metro Division finish):
 - ONLY discuss reclaiming Metro #2 if the gap to PIT is 3pts or less — otherwise focus ONLY on holding Metro #3
 - Always include the tiebreaker situation using the RW/ROW data above (NHL order: pts% → RW → ROW → W → H2H)
-- Include a specific pts/game pace calculation NYI needs
+- Include raw pts NYI needs (e.g. '9 more pts in 6 games') and how that compares to current pace (e.g. 'current pace earns ~7pts, need 2 above pace')
 - Focus on the most important upcoming H2H game for seeding
 - DO NOT state things visible at a glance
 - Every insight must contain a specific number
