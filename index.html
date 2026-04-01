@@ -444,8 +444,12 @@ function parseGameDate(s) {
   return new Date(2026, MONTHS[p[0]], parseInt(p[1]));
 }
 function todayDate() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  // Use Eastern time to match NHL schedule dates
+  const now = new Date();
+  const etStr = now.toLocaleDateString('en-US', {timeZone:'America/New_York',
+    year:'numeric', month:'2-digit', day:'2-digit'});
+  const [m, d, y] = etStr.split('/');
+  return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
 }
 function remaining(team) {
   const today = todayDate();
@@ -1118,10 +1122,16 @@ function renderClinch(){
   const wcp=wcPool(), met=sortedDiv('MET');
 
   function threshTeam(pos){
-    if(pos==='WC2'&&wcp[2]) return wcp[2];
-    if(pos==='WC1'&&wcp[1]) return wcp[1];
-    if(pos==='METRO3'&&met[3]) return met[3];
-    if(pos==='METRO2'&&met[2]) return met[2];
+    // Returns the team currently HOLDING that spot (NYI needs to beat their projection)
+    // Skip NYI itself since we want an opponent to compare against
+    function firstNonNYI(arr, idx) {
+      for(let i=idx; i<arr.length; i++) if(arr[i]&&arr[i]!=='NYI') return arr[i];
+      return null;
+    }
+    if(pos==='WC2')   return firstNonNYI(wcp, 1); // current WC2 holder
+    if(pos==='WC1')   return firstNonNYI(wcp, 0); // current WC1 holder
+    if(pos==='METRO3') return firstNonNYI(met, 2); // current Metro#3 holder
+    if(pos==='METRO2') return firstNonNYI(met, 1); // current Metro#2 holder
     return null;
   }
 
