@@ -1550,8 +1550,10 @@ function _renderScores(games){
 
 async function _fetchScores(){
   try{
-    // Always use explicit date — /score/now can return yesterday's finals
-    const url='/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_scoreOffset);
+    // Use /score/now for today (always current), date endpoint for past/future
+    const url=_scoreOffset===0
+      ?'/.netlify/functions/nhl?type=scores'
+      :'/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_scoreOffset);
     const r=await fetch(url);
     if(!r.ok) throw new Error(r.status);
     const d=await r.json();
