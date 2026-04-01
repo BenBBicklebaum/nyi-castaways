@@ -1331,9 +1331,9 @@ function renderClinch(){
       const tbBonus = edge==='ahead'?1:0; // if NYI wins TB, tie is enough
       const magic = rivalMax - nyi.pts + 1 - tbBonus;
       if(magic<=0){
-        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span> clinched vs ${t}`);
+        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span>`);
       } else {
-        lines.push(`<span style="color:var(--muted)">${lbl}:</span> <strong>MN ${magic}</strong> vs ${t}${tbBonus?' (TB✓)':''}`);
+        lines.push(`<span style="color:var(--muted)">${lbl}:</span> <strong>${magic}</strong>`);
       }
     });
     mn.innerHTML='<span style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--org)">🎯 Magic Numbers&nbsp;&nbsp;</span>'+lines.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
