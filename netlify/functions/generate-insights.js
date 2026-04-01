@@ -53,6 +53,7 @@ function postJson(url, payload, headers = {}) {
 const RACE_GROUP = new Set(['BOS','CBJ','DET','NYI','OTT','PHI','PIT']);
 
 // ── Main handler ──────────────────────────────────────────────────
+
 exports.handler = async (event, context) => {
   console.log('generate-insights: starting', new Date().toISOString());
   
@@ -152,10 +153,9 @@ exports.handler = async (event, context) => {
     await store.setJSON('game-snapshot', currentSnapshot);
 
     // 6. Decide whether to generate new insights
-    const shouldGenerate =
-      newlyFinished.length > 0 ||        // A push group game just finished
-      insightsAge === Infinity ||          // No insights ever generated
-      insightsAge > 24 * 60;              // Fallback: regenerate daily even if no games
+    // Always regenerate — cron runs hourly so this is fine
+    // Manual runs from UI should always produce fresh insights
+    const shouldGenerate = true;        // Fallback: regenerate daily even if no games
 
     if (!shouldGenerate) {
       console.log(`Skipping — no newly finished games, insights ${Math.round(insightsAge)}min old`);
@@ -239,39 +239,36 @@ exports.handler = async (event, context) => {
     const gamesLeft = 82 - nyi.gp;
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
-    const prompt = `You are AI Butchie Bot, the AI analyst for the NYI Castaways Playoff Push — a sharp, honest hockey analyst who's also a die-hard Islanders fan. You write like a beat writer with a supercomputer: specific, opinionated, and willing to say uncomfortable things when the numbers demand it.
+    const prompt = `You are AI Butchie Bot — a sharp NHL analyst. Return ONLY a JSON object, nothing else.
 
-PUSH GROUP STANDINGS (Eastern Conference playoff bubble):
+STANDINGS DATA:
 ${standingsStr}
 
-TIEBREAKER SITUATIONS (teams within 3pts of NYI):
-${tbLines.length ? tbLines.join('\n') : 'No close tiebreaker situations'}
+TIEBREAKER SITUATIONS (teams within 5pts of NYI):
+${tbLines.length ? tbLines.join('\n') : 'None'}
 ${recentStr}${mtlContext}
 
-NYI has ${gamesLeft} games remaining. Season ends April 16, 2026.
+NYI has ${gamesLeft} games left. Season ends April 16, 2026.
 
-Generate TWO separate sets of insights as a JSON object with exactly these two keys:
+Return this exact JSON structure with NO other text, NO markdown, NO explanation:
+{"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
-"metro": 3-4 insights FOCUSED EXCLUSIVELY on NYI's Metropolitan Division finish.
-- Is Metro #2 secure vs PIT? Can NYI catch Metro #1 (CAR)? What does Metro #3 mean vs Metro #2?
-- Reference PIT's RW/ROW tiebreaker situation vs NYI specifically
-- What H2H games remain that affect the Metro seeding?
-- Be specific about what Metro #2 vs #3 means for playoff seeding and first-round matchup
+METRO insights (exactly 3, about NYI's Metro Division finish):
+- Focus on tiebreaker math vs PIT using the RW/ROW data above — who leads now and projected
+- Focus on pts/game pace NYI needs to reclaim Metro #2
+- Focus on specific upcoming H2H games that affect seeding
+- DO NOT state things visible at a glance (e.g. "PIT is ahead")
+- Every insight must contain a specific number calculated from the data
+- Max 2 sentences per insight. Each sentence max 20 words.
 
-"wildcard": 3-4 insights FOCUSED EXCLUSIVELY on the Wild Card picture.
-- Which teams are threatening WC1 and WC2 from outside the top 3?
-- BOS likely locks WC1 — what does that mean for WC2 competition?
-- Which bubble teams (OTT, DET, PHI) are most dangerous and why?
-- What pace does NYI need to hold WC2 or better?
+WILDCARD insights (exactly 3, about holding a playoff spot):
+- Focus on specific pts/game rates NYI needs to hold off OTT/DET/PHI
+- Focus on which bubble team has the most favorable schedule and by how much
+- Focus on rival-vs-rival matchups that help NYI
+- DO NOT state the obvious — every insight must reveal something non-obvious
+- Max 2 sentences per insight. Each sentence max 20 words.
 
-Rules for ALL insights:
-- Each insight is a standalone string, 2-3 sentences max
-- Use specific numbers, team names, trends — no generic statements
-- Be honest — if NYI is vulnerable, say so
-- Avoid "every game matters" or "the race is tight"
-
-Respond ONLY with valid JSON in this exact format. No preamble, no markdown:
-{"metro": ["insight 1", "insight 2", "insight 3"], "wildcard": ["insight 1", "insight 2", "insight 3"]}`;
+CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
 
     // 9. Call OpenAI
     const apiKey = process.env.OPENAI_API_KEY;
@@ -281,8 +278,8 @@ Respond ONLY with valid JSON in this exact format. No preamble, no markdown:
       'https://api.openai.com/v1/chat/completions',
       {
         model: 'gpt-4o-mini',
-        max_tokens: 2500,
-        temperature: 0.7,
+        max_tokens: 1200,
+        temperature: 0.75,
         messages: [{ role: 'user', content: prompt }]
       },
       { 'Authorization': 'Bearer ' + apiKey }
@@ -294,21 +291,36 @@ Respond ONLY with valid JSON in this exact format. No preamble, no markdown:
     const content = aiData.choices?.[0]?.message?.content || '';
     console.log('OpenAI response:', content.slice(0, 200));
 
-    // Parse JSON object with metro and wildcard keys
+    // Parse JSON robustly
     let metroInsights = [], wildcardInsights = [];
     try {
-      const cleaned = content.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(cleaned);
-      if (parsed.metro && Array.isArray(parsed.metro)) metroInsights = parsed.metro;
-      if (parsed.wildcard && Array.isArray(parsed.wildcard)) wildcardInsights = parsed.wildcard;
-      if (!metroInsights.length && !wildcardInsights.length) throw new Error('No insights parsed');
+      // Try 1: parse the full content directly
+      let parsed = null;
+      try {
+        parsed = JSON.parse(content.trim());
+      } catch(e1) {
+        // Try 2: extract { ... } block
+        const start = content.indexOf('{');
+        // Find the matching closing brace by counting
+        let depth = 0, end = -1;
+        for (let i = start; i < content.length; i++) {
+          if (content[i] === '{') depth++;
+          else if (content[i] === '}') { depth--; if (depth === 0) { end = i; break; } }
+        }
+        if (start === -1 || end === -1) throw new Error('No complete JSON object found');
+        parsed = JSON.parse(content.slice(start, end + 1));
+      }
+      if (parsed.metro && Array.isArray(parsed.metro)) {
+        metroInsights = parsed.metro.filter(s => typeof s === 'string' && s.length > 10).slice(0, 3);
+      }
+      if (parsed.wildcard && Array.isArray(parsed.wildcard)) {
+        wildcardInsights = parsed.wildcard.filter(s => typeof s === 'string' && s.length > 10).slice(0, 3);
+      }
+      if (!metroInsights.length && !wildcardInsights.length) throw new Error('Both arrays empty');
+      console.log('generate-insights: parsed', metroInsights.length, 'metro,', wildcardInsights.length, 'wildcard');
     } catch(e) {
-      console.error('Parse error:', e.message);
-      const lines = content.split('\n')
-        .map(l => l.replace(/^[\d\-\.\*\s"]+/, '').replace(/"[\,]?$/, '').trim())
-        .filter(l => l.length > 30);
-      metroInsights = lines.slice(0, Math.ceil(lines.length/2));
-      wildcardInsights = lines.slice(Math.ceil(lines.length/2));
+      console.error('Parse error:', e.message, '| content length:', content.length, '| sample:', content.slice(0, 200));
+      return { statusCode: 500, body: JSON.stringify({ error: 'JSON parse failed: ' + e.message }) };
     }
 
     // 10. Store insights
