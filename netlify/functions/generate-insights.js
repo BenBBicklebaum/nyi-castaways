@@ -288,6 +288,14 @@ ${recentStr}${mtlContext}
 NYI has ${gamesLeft} games left. Season ends April 16, 2026. Today is ${today}.
 BOS leads WC1 by ${(ST['BOS']?ST['BOS'].pts-nyi.pts:0)} points. Only discuss reclaiming WC1 if that gap is 4 or fewer.
 
+DIVISION STRUCTURE (critical — do not mix these up):
+- METROPOLITAN DIVISION teams: CAR, NYI, PIT, CBJ, PHI, WSH, NJD, NYR
+- ATLANTIC DIVISION teams: BUF, TBL, MTL, BOS, OTT, DET, TOR, FLA
+- OTT and DET are ATLANTIC teams competing for WILD CARD spots — they are NOT Metro rivals
+- PHI is BOTH a Metro team AND a WC bubble team
+- Metro #3 race is NYI vs PIT (and potentially CBJ/PHI below)
+- Wild Card race is NYI vs OTT, DET, PHI (from outside Metro top 3)
+
 NYI REMAINING SCHEDULE (${gamesLeft} games): ${nyiSchedStr}
 NYI H2H GAMES vs RIVALS remaining: ${nyiH2H.length ? nyiH2H.map(g=>g[0]+' '+(g[2]==='H'?'vs':'@')+g[1]).join(', ') : 'None'}
 
@@ -302,15 +310,16 @@ Return this exact JSON structure with NO other text, NO markdown, NO explanation
 METRO insights (exactly 3). These must go BEYOND what the standings show — synthesize multiple data points to reveal something non-obvious:
 
 - Insight 1 MUST be about the RW tiebreaker vs PIT specifically: state who leads RW now, by how much, AND calculate what NYI needs to do in remaining games to project a RW lead at season end (estimate: ~55% of wins come in regulation). If PIT leads RW now, how many regulation wins does NYI need? Be precise.
-- Insight 2 MUST be a scenario analysis: "If NYI goes X-Y in remaining games, they finish with ~Z pts, which [holds/loses] Metro #3 because [rival] would need to go [W-L] to catch them." Pick the most realistic scenario.
-- Insight 3 MUST analyze a specific upcoming game from NYI REMAINING SCHEDULE and its DUAL impact — both the direct pts AND the tiebreaker implications. E.g. a win vs OTT on Apr 11 adds 2pts AND hurts OTT directly.
-- NEVER mention PIT in the wildcard section — PIT is a Metro team, not WC
+- Insight 2 MUST be a scenario analysis. IMPORTANT MATH: a win = 2pts, OT/SO win = 2pts, OT/SO loss = 1pt, regulation loss = 0pts. NYI currently has ${nyi.pts}pts. If NYI goes 4-2, they add 8pts = ${nyi.pts+8}pts. If 3-3, add 6pts = ${nyi.pts+6}pts. Compare to PIT's current ${ST['PIT']?ST['PIT'].pts:0}pts with their remaining games. Metro #3 requires beating PIT OR finishing ahead of them. ONLY compare NYI to Metro teams (CAR, PIT, CBJ, PHI, WSH, NJD, NYR) — NOT Ottawa or Boston which are WC/ATL teams.
+- Insight 3 MUST analyze a specific upcoming game from NYI REMAINING SCHEDULE and its DUAL impact — both the direct pts AND effect on a Metro or WC rival. OTT is a WC team, not Metro. PHI IS a Metro team and also a WC bubble team.
+- NEVER mention PIT in the wildcard section
+- NEVER put OTT or BOS in the Metro race — they are NOT Metro division teams
 - NEVER restate anything already shown in the standings
 - Max 2 sentences. Every sentence must contain a number.
 
 WILDCARD insights (exactly 3). Completely separate from metro — about the WC bubble race only. Must surface non-obvious findings:
 
-- Insight 1 MUST be a convergence scenario: given NYI's remaining schedule and OTT/DET/PHI remaining schedules from BUBBLE TEAM SCHEDULES above, calculate: if everyone plays at current pace, what's the projected final gap between NYI and the most dangerous team? Is NYI's current pts lead enough?
+- Insight 1 MUST be a convergence scenario with explicit math. Current pts: NYI ${nyi.pts}, then check OTT/DET/PHI pts from STANDINGS DATA. Calculate: NYI projected final = ${nyi.pts} + (current pace × ${gamesLeft} games). Each rival's projected final = their current pts + (their pace × their games left). Show the math explicitly: "NYI projects Xpts, OTT projects Ypts, gap = Z". Verify your arithmetic before writing.
 - Insight 2 MUST identify a specific rival-vs-rival game from BUBBLE TEAM SCHEDULES that creates a zero-sum outcome. State the date, teams, and the exact math: "If [A] beats [B], NYI's effective lead grows to X pts because..."
 - Insight 3 MUST identify something counterintuitive: e.g. which rival is actually MORE dangerous than their current pts suggest (due to schedule, pace, H2H games remaining), OR which is less dangerous than they appear. Show the math.
 - NEVER use pts/game rates — always say "X pts in Y games"
