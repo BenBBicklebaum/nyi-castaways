@@ -1572,15 +1572,17 @@ function _dateLabel(offset){
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 function scNavDay(dir){
-  _scoreOffset=Math.max(-14,Math.min(17,_scoreOffset+dir));
-  const eff=_scoreOffset-_apiBaseOffset; // 0 = on "today relative to API"
+  // Navigate relative to current effective position so eff=0 always = today
+  const curEff=_scoreOffset-_apiBaseOffset;
+  const newEff=Math.max(-14,Math.min(17,curEff+dir));
+  _scoreOffset=newEff+_apiBaseOffset;
   const lbl=document.getElementById('sc-nav-date');
-  if(lbl) lbl.textContent=eff===0?'Today':_dateLabel(_scoreOffset);
+  if(lbl) lbl.textContent=newEff===0?'Today':_dateLabel(_scoreOffset);
   const todayBtn=document.getElementById('sc-today-btn');
-  if(todayBtn) todayBtn.style.display=eff!==0?'inline-block':'none';
+  if(todayBtn) todayBtn.style.display=newEff!==0?'inline-block':'none';
   if(_scoreTimer){clearInterval(_scoreTimer);_scoreTimer=null;}
   _fetchScores();
-  if(eff===0) _scoreTimer=setInterval(_fetchScores,60000);
+  if(newEff===0) _scoreTimer=setInterval(_fetchScores,60000);
 }
 function scNavToday(){
   _scoreOffset=_apiBaseOffset; // return to whatever API considers current
