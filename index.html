@@ -1679,7 +1679,25 @@ function _renderScores(games){
   const row=document.getElementById('sc-row');
   const ts=document.getElementById('sc-ts');
   if(!row) return;
-  if(!filtered.length){row.innerHTML='<span class="sc-none">No race group games today</span>';if(ts)ts.textContent='';return;}
+  if(!filtered.length){
+    // Still update date label even with no race games
+    const _allDates=(games||[]).map(g=>g.gameDate).filter(Boolean);
+    const _firstDate=_allDates[0];
+    const _navLbl2=document.getElementById('sc-nav-date');
+    const _todayBtn2=document.getElementById('sc-today-btn');
+    if(_apiBaseOffset===-1 && _firstDate){
+      const _gd=new Date(_firstDate+'T12:00:00');
+      const _ydLbl=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      row.innerHTML='<span class="sc-none">No race group games '+_ydLbl+'</span>';
+      if(ts) ts.textContent='Showing '+_ydLbl+' · press › for today';
+      if(_navLbl2) _navLbl2.textContent=_ydLbl;
+      if(_todayBtn2) _todayBtn2.style.display='none';
+    } else {
+      row.innerHTML='<span class="sc-none">No race group games today</span>';
+      if(ts) ts.textContent='';
+    }
+    return;
+  }
   row.innerHTML=filtered.map(g=>{
     const card=_buildCard(g.awayTeam.abbrev,g.homeTeam.abbrev,g.awayTeam.score||0,g.homeTeam.score||0,g.gameState,_gameLabel(g));
     const isNYI=g.awayTeam.abbrev==='NYI'||g.homeTeam.abbrev==='NYI';
