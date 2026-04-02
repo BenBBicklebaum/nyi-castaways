@@ -1553,8 +1553,9 @@ function renderField(){
 // SCORES
 // ═══════════════════════════════════════════════════════════════
 let _scoreTimer=null;
-let _scoreOffset=0;
-let _apiBaseOffset=0; // tracks if API is showing a day behind
+let _userEff=0;       // user's intended day: 0=today, 1=tomorrow, -1=yesterday
+let _apiBaseOffset=0; // set when API returns a different date than today (-1 = API behind by 1)
+let _scoreOffset=0;   // computed: _userEff + _apiBaseOffset (calendar offset for date endpoint)
 
 function _offsetToDate(offset){
   // Use Eastern time (UTC-4 EDT / UTC-5 EST) to match NHL schedule dates
@@ -1572,27 +1573,24 @@ function _dateLabel(offset){
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 function scNavDay(dir){
-  // Navigate relative to current effective position so eff=0 always = today
-  const curEff=_scoreOffset-_apiBaseOffset;
-  const newEff=Math.max(-14,Math.min(17,curEff+dir));
-  _scoreOffset=newEff+_apiBaseOffset;
-  const lbl=document.getElementById('sc-nav-date');
-  if(lbl) lbl.textContent=newEff===0?'Today':_dateLabel(_scoreOffset);
-  const todayBtn=document.getElementById('sc-today-btn');
-  if(todayBtn) todayBtn.style.display=newEff!==0?'inline-block':'none';
+  _userEff=Math.max(-14,Math.min(17,_userEff+dir));
+  _updateNavLabels();
   if(_scoreTimer){clearInterval(_scoreTimer);_scoreTimer=null;}
   _fetchScores();
-  if(newEff===0) _scoreTimer=setInterval(_fetchScores,60000);
+  if(_userEff===0) _scoreTimer=setInterval(_fetchScores,60000);
 }
 function scNavToday(){
-  _scoreOffset=_apiBaseOffset; // return to whatever API considers current
-  const lbl=document.getElementById('sc-nav-date');
-  if(lbl) lbl.textContent='Today';
-  const todayBtn=document.getElementById('sc-today-btn');
-  if(todayBtn) todayBtn.style.display='none';
+  _userEff=0;
+  _updateNavLabels();
   if(_scoreTimer){clearInterval(_scoreTimer);_scoreTimer=null;}
   _fetchScores();
   _scoreTimer=setInterval(_fetchScores,60000);
+}
+function _updateNavLabels(){
+  const lbl=document.getElementById('sc-nav-date');
+  const todayBtn=document.getElementById('sc-today-btn');
+  if(lbl) lbl.textContent=_userEff===0?'Today':_dateLabel(_userEff);
+  if(todayBtn) todayBtn.style.display=_userEff!==0?'inline-block':'none';
 }
 
 function _gameLabel(g){
@@ -1687,7 +1685,7 @@ function _renderScores(games){
     const _firstDate=_allDates[0];
     const _navLbl2=document.getElementById('sc-nav-date');
     const _todayBtn2=document.getElementById('sc-today-btn');
-    if(_apiBaseOffset===-1 && _firstDate){
+    if(_userEff===0 && _apiBaseOffset===-1 && _firstDate){
       const _gd=new Date(_firstDate+'T12:00:00');
       const _ydLbl=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
       row.innerHTML='<span class="sc-none">No race group games '+_ydLbl+'</span>';
@@ -1695,7 +1693,7 @@ function _renderScores(games){
       if(_navLbl2) _navLbl2.textContent=_ydLbl;
       if(_todayBtn2) _todayBtn2.style.display='none';
     } else {
-      row.innerHTML='<span class="sc-none">No race group games today</span>';
+      row.innerHTML=`<span class="sc-none">No race group games ${_userEff===0?'today':_dateLabel(_userEff)}</span>`;
       if(ts) ts.textContent='';
     }
     return;
@@ -1712,12 +1710,10 @@ function _renderScores(games){
   const _gameDate=_gameDates[0];
   const _navLbl=document.getElementById('sc-nav-date');
   const _todayBtn=document.getElementById('sc-today-btn');
-  const _eff=_scoreOffset-_apiBaseOffset; // 0=today, positive=future, negative=past
-
-  if(_eff===0){
-    // On "today" (whatever the API considers current)
+  // _userEff=0 means user is on "today" (whatever API considers current)
+  if(_userEff===0){
     if(_apiBaseOffset===-1 && _gameDate){
-      // API is still on yesterday — show the date, not "Today"
+      // API still on yesterday — show the actual date
       const _gd=new Date(_gameDate+'T12:00:00');
       const _ydLbl=_gd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
       if(ts) ts.textContent='Showing '+_ydLbl+' · press › for today';
@@ -1728,8 +1724,8 @@ function _renderScores(games){
     }
     if(_todayBtn) _todayBtn.style.display='none';
   } else {
-    if(ts) ts.textContent=_dateLabel(_scoreOffset);
-    if(_navLbl) _navLbl.textContent=_dateLabel(_scoreOffset);
+    if(ts) ts.textContent=_dateLabel(_userEff);
+    if(_navLbl) _navLbl.textContent=_dateLabel(_userEff);
     if(_todayBtn) _todayBtn.style.display='inline-block';
   }
   const raceTs=document.getElementById('race-ts');
@@ -1765,28 +1761,31 @@ function _renderScores(games){
 
 async function _fetchScores(){
   try{
-    const _eff=_scoreOffset-_apiBaseOffset;
-    const url=_eff===0
+    // _userEff=0 always means "what the API considers today" → use /score/now
+    const url=_userEff===0
       ?'/.netlify/functions/nhl?type=scores'
-      :'/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_scoreOffset);
+      :'/.netlify/functions/nhl?type=scores&date='+_offsetToDate(_userEff);
     const r=await fetch(url);
     if(!r.ok) throw new Error(r.status);
     const d=await r.json();
     const games=d.games||[];
 
-    // Detect API base: when fetching /score/now, check what date came back
-    if(_eff===0 && games.length>0){
+    // When fetching /score/now, detect what date the API actually returned
+    if(_userEff===0 && games.length>0){
       const firstDate=games[0].gameDate;
       if(firstDate){
         const apiDate=new Date(firstDate+'T12:00:00');
         const today=todayDate();
         const yest=new Date(today); yest.setDate(yest.getDate()-1);
-        if(apiDate.toDateString()===yest.toDateString()){
-          _apiBaseOffset=-1; // API is a day behind
-        } else {
-          _apiBaseOffset=0;  // API is on today
-        }
+        const newBase=apiDate.toDateString()===yest.toDateString()?-1:0;
+        // If API base shifted (e.g. API just updated from yesterday to today),
+        // _userEff stays 0 — user still wants "today" — labels auto-correct
+        _apiBaseOffset=newBase;
+        _scoreOffset=_userEff; // for date endpoint when user navigates away
       }
+    } else {
+      _scoreOffset=_userEff; // non-zero: use calendar offset directly
+      _apiBaseOffset=0;
     }
 
     _renderScores(games);
@@ -1932,8 +1931,9 @@ async function loadAll(){
   renderObservations();
   renderDeepInsights();
   renderField();
-  _scoreOffset=0;
+  _userEff=0;
   _apiBaseOffset=0;
+  _scoreOffset=0;
   _fetchScores(); // will detect API date and set labels correctly
   if(_scoreTimer) clearInterval(_scoreTimer);
   _scoreTimer=setInterval(_fetchScores,60000);
