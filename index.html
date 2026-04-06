@@ -39,7 +39,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .sc-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.12em;color:var(--org);text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
 .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .sc-row .sc-nyi-wrap{grid-column:1/-1}
-.sc-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:5px;min-width:0}
+.sc-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden}
 a.sc-card{display:block;transition:background .15s,border-color .15s}a.sc-card:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.22)}a.sc-card:active{background:rgba(255,255,255,.15)}
 .sc-goals-toggle{background:none;border:none;color:#64748b;font-size:.58rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em;cursor:pointer;padding:0 2px;display:inline-flex;align-items:center;gap:2px;text-transform:uppercase;transition:color .15s}
 .sc-goals-toggle:hover{color:#94a3b8}
@@ -206,6 +206,11 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
   .rank-col{display:none}
   .fc-grid{grid-template-columns:1fr}
   .cc-row{grid-template-columns:1fr 1fr}
+  /* Score cards: single column on mobile */
+  .sc-row{grid-template-columns:1fr}
+  .sc-root-lbl{display:none}
+  .sc-card{padding:4px 8px}
+  .sc-nyi{padding:6px 10px!important}
 }
   th,td{padding:4px 4px;font-size:.68rem}
   .t-nm{font-size:.8rem}
@@ -1844,7 +1849,7 @@ function _buildCard(away,home,aScore,hScore,state,label,game){
   const cardClass = `sc-card ${isNYI?'sc-nyi':''}`;
   const cardStyle = `border-left:3px solid ${border};flex-direction:column;align-items:flex-start;`;
   const rightBtns = [badgeHtml, goalsToggle, gcLinkHtml].filter(Boolean).join(' ');
-  const topRow = `<div style="display:flex;align-items:center;gap:5px;width:100%">${dotHtml}<span class="sc-matchup">${matchHtml}</span><span style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0">${rightBtns}</span></div>`;
+  const topRow = `<div style="display:flex;align-items:center;gap:5px;width:100%;min-width:0">${dotHtml}<span class="sc-matchup" style="min-width:0;overflow:hidden">${matchHtml}</span><span style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;white-space:nowrap">${rightBtns}</span></div>`;
   return `<div class="${cardClass}" ${dr} style="${cardStyle}">${topRow}${goalsHtml}</div>`;
 }
 
