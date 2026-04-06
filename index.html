@@ -760,6 +760,7 @@ function getPos(team) {
 
 // Tiebreaker comparison
 function tbCompare(t1, t2) {
+  // Full comparison including pts — used for standings sorting
   const s1=ST[t1], s2=ST[t2]; if(!s1||!s2) return 0;
   if(s1.pts!==s2.pts) return s1.pts-s2.pts;
   if(s1.rw!==s2.rw) return s1.rw-s2.rw;
@@ -767,9 +768,13 @@ function tbCompare(t1, t2) {
   return s1.wins-s2.wins;
 }
 function tbEdge(team, rival) {
-  // Returns 'ahead', 'behind', 'tied' based on tiebreakers
-  const c = tbCompare(team, rival);
-  return c>0?'ahead':c<0?'behind':'tied';
+  // Returns 'ahead'/'behind'/'tied' — PURE tiebreaker order (RW→ROW→W), ignoring pts.
+  // Use this whenever you want to know: if pts end up equal, who wins?
+  const s1=ST[team], s2=ST[rival]; if(!s1||!s2) return 'tied';
+  if(s1.rw!==s2.rw) return s1.rw>s2.rw?'ahead':'behind';
+  if(s1.row!==s2.row) return s1.row>s2.row?'ahead':'behind';
+  if(s1.wins!==s2.wins) return s1.wins>s2.wins?'ahead':'behind';
+  return 'tied';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -978,7 +983,9 @@ function renderRace() {
       const isH2H=RACE_GROUP.has(opp);
       const chipCls=isH2H?'chip chip-h2h':(ha==='H'?'chip chip-h':'chip chip-a');
       const oppCol=TEAM_COLORS[opp]||'#fff';
-      return `<span class="${chipCls}" style="color:${oppCol}">${ha==='H'?'vs':'@'}${opp}</span>`;
+      const [mon,day]=dt.split(' ');
+      const shortDate=`${MONTHS[mon]+1}/${parseInt(day)}`;
+      return `<span class="${chipCls}"><span style="font-size:.55em;opacity:.55;margin-right:2px">${shortDate}</span><span style="color:${oppCol}">${ha==='H'?'vs':'@'}${opp}</span></span>`;
     }).join('');
 
     rows.push(`<tr class="${rowCls}" data-uid="${uid}" style="cursor:pointer">
@@ -1014,20 +1021,25 @@ function renderRace() {
   const raceThreshold = Math.min(nyiMetRaceGl + 2, 4);
 
   // Metro section: NYI + teams within threshold pts of NYI in either direction
-  // Never include Met #1 (division leader, out of reach)
-  // Met #2 only if their lead over NYI ≤ threshold (actually closeable)
-  // Met #3 (the direct target) always included if within threshold
+  // Sectioned like WC: Metro #3 holder first, then NYI, then teams below NYI
   const metRaceTeams = met.filter(t => {
     if(!t || !ST[t]) return false;
-    if(t === 'NYI') return true; // always include NYI — they're the team chasing
+    if(t === 'NYI') return true;
     const gap = Math.abs(ST[t].pts - nyiPts);
     return gap <= raceThreshold;
   });
   metRaceTeams.sort((a,b) => ST[b].pts - ST[a].pts);
-  // Ensure Metro #3 holder is always shown (it's the direct target) even if 1pt outside threshold
+  // Ensure Metro #3 holder is always shown even if 1pt outside threshold
   const met3 = met.find(t => t && t !== 'NYI' && met.indexOf(t) === 2);
   if(met3 && ST[met3] && !metRaceTeams.includes(met3)) metRaceTeams.unshift(met3);
-  metRaceTeams.filter(Boolean).forEach(raceRow);
+
+  // Split into "chasing" (at/above NYI) and "bubble below" (below NYI)
+  const metAbove = metRaceTeams.filter(t => t !== 'NYI' && ST[t] && ST[t].pts >= nyiPts);
+  const metBelow = metRaceTeams.filter(t => t !== 'NYI' && ST[t] && ST[t].pts < nyiPts);
+
+  metAbove.forEach(raceRow); // Metro #3 holder (the target)
+  raceRow('NYI');             // NYI — the team chasing
+  if(metBelow.length){ banner('Bubble Below','ban-bub'); metBelow.forEach(raceRow); }
 
   banner('Wild Card','ban-wc');
   // WC section: only show WC2 holder (the direct target NYI is chasing)
@@ -1509,9 +1521,10 @@ function renderObservations(){
     {lbl:'⚔️ H2H Swing Games',txt:h2hTrue.length
       ?`<strong>${h2hTrue.length} of ${nyiGl} remaining games are direct H2H vs playoff race teams</strong>: ${h2hDates}. Each win adds 2pts AND costs a rival 2pts — a 4-pt swing.`
       :`No H2H games remaining vs playoff race teams. NYI's fate is decided by running the table and watching rivals.`},
-    // Metro #2 card: only render if the gap is still mathematically closeable
-    ...(pit&&pitTeam&&pitIsCloseable ? [{lbl:`📊 Metro #2 (${pitTeam}) — Gap Narrowing`,txt:`${pitTeam} leads Metro #2 at <strong>${pit.pts}pts</strong> — ${pitLead}pts ahead with ${pitGl} games left. Closeable if NYI wins out and ${pitTeam} stumbles — worth watching.`}] : []),
-    ...(!pitIsCloseable && pit&&pitTeam ? [{lbl:`📊 Metro #2 (${pitTeam}) — Not in Play`,txt:`${pitTeam} has Metro #2 at <strong>${pit.pts}pts</strong> — ${pitLead}pts ahead with ${pitGl} games left. Focus is Metro #3 and WC2.`}] : [])
+    // Metro #2 card: only show if gap is genuinely closeable this season
+    // = PIT lead ≤ games NYI has left (NYI wins out + PIT loses out scenario)
+    // If lead > nyiGl, it's over — don't clutter the UI
+    ...(pit&&pitTeam&&pitLead<=nyiGl ? [{lbl:`📊 Metro #2 (${pitTeam}) — Still Mathematically Possible`,txt:`${pitTeam} leads Metro #2 at <strong>${pit.pts}pts</strong> — ${pitLead}pts ahead with ${pitGl} games left. Requires NYI to win out and ${pitTeam} to lose out.`}] : [])
   ];
   document.getElementById('metro-obs-cards').innerHTML=metObs.map(o=>
     `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
@@ -1676,7 +1689,10 @@ function renderField(){
     const h2h=remaining('NYI').filter(g=>g[1]===t).length;
     let tbNote='';
     if(nyi&&Math.abs(nyi.pts-s.pts)<=2){
-      tbNote=`Tiebreaker: RW ${s.rw}${edge==='ahead'?` <span class="tb-behind">(NYI ${nyi.rw} — NYI leads)</span>`:edge==='behind'?` <span class="tb-edge">(NYI ${nyi.rw} — ${t} leads)</span>`:' (even)'}. `;
+      tbNote=`Tiebreaker: RW ${s.rw}${
+        edge==='ahead'?` <span class="tb-edge">(NYI ${nyi.rw} — NYI leads TB)</span>`:
+        edge==='behind'?` <span class="tb-behind">(NYI ${nyi.rw} — ${t} leads TB)</span>`:
+        ' (even)'}. `;
     }
     let body=`${gap<0?`${Math.abs(gap)}pts <strong>ahead of NYI</strong>`:`${gap}pts behind NYI`}, projects <strong>${proj}pts</strong>. Faces ${rankDesc}. `;
     body+=tbNote;
