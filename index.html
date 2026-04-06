@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NYI Castaways Playoff Push 2026</title>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-W2JLY4BXGR"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-W2JLY4BXGR');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -32,12 +40,16 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .sc-row .sc-nyi-wrap{grid-column:1/-1}
 .sc-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:5px;min-width:0}
+a.sc-card{display:block;transition:background .15s,border-color .15s}a.sc-card:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.22)}a.sc-card:active{background:rgba(255,255,255,.15)}
+.sc-goals-toggle{background:none;border:none;color:#64748b;font-size:.58rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em;cursor:pointer;padding:0 2px;display:inline-flex;align-items:center;gap:2px;text-transform:uppercase;transition:color .15s}
+.sc-goals-toggle:hover{color:#94a3b8}
+.sc-goals-body{display:none;width:100%;margin-top:5px;padding-top:5px;border-top:1px solid rgba(255,255,255,.08)}
+.sc-goals-body.open{display:block}
 .sc-matchup{display:flex;align-items:center;gap:4px;flex:1;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:700}
 .sc-side{display:inline-flex;align-items:center;gap:3px}
 .sc-score{font-size:.95rem;font-weight:900;color:#64748b;min-width:12px;text-align:center}
 .sc-sep{color:#1a3a6b;font-size:.65rem;padding:0 2px}
 .sc-winner .sc-tm{color:#f1f5f9!important}
-.sc-winner .sc-score{color:#fff!important;font-size:1rem!important}
 .sc-nyi{border-color:var(--org)!important;background:rgba(244,125,48,.12)!important;padding:5px 10px!important}
 .sc-nyi .sc-score{font-size:1.15rem!important}
 .sc-nyi .sc-tm{font-size:.88rem!important;color:#f1f5f9!important}
@@ -279,7 +291,7 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
       <div class="sec-lbl">Playoff Push</div>
       <div class="tbl-wrap">
         <div class="tbl-top" onclick="toggleSection('race-body','race-chev')">
-          <span class="tbl-title">Metro #2/#3 · WC1/2 · Bubble</span>
+          <span class="tbl-title">Chasing Metro #3 &amp; WC2 · Bubble</span>
           <span style="display:flex;align-items:center;gap:8px">
             <span class="sec-toggle-btn" id="race-chev">▲ Collapse</span>
           </span>
@@ -295,6 +307,7 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
                 <th title="Current playoff position — division seed or wild card spot">Pos</th>
                 <th class="num" title="Games Played">GP</th>
                 <th class="num" title="Points — 2pts for a win, 1pt for OT/SO loss">PTS</th>
+                <th class="num" title="Points Percentage — pts earned divided by max possible pts (GP × 2). Shows efficiency regardless of games played.">PTS%</th>
                 <th class="num" title="Wins (regulation, OT, and shootout)">W</th>
                 <th class="num hide-mobile muted" title="Regulation losses">L</th>
                 <th class="num hide-mobile muted" title="Overtime or shootout losses — team earns 1 point">OTL</th>
@@ -374,7 +387,7 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
       <summary>Methodology</summary>
       <div class="meth-body">
 
-        <p><strong>Playoff Race Games</strong> — The scores bar tracks games involving any team in the push group (BOS, CBJ, DET, NYI, OTT, PHI, PIT). NYI's game is always shown full-width at the top. Use ‹ › to navigate up to 14 days back or 3 days forward.</p>
+        <p><strong>Playoff Race Games</strong> — The scores bar tracks games involving any team in the active push group (derived live from standings). NYI's game is always shown full-width at the top. Use ‹ › to navigate up to 14 days back or 3 days forward.</p>
 
         <p style="margin-top:8px"><strong>Projected Points</strong> — Three factors are blended:</p>
         <ul style="margin:4px 0 8px 16px;line-height:1.8;font-size:.75rem">
@@ -407,7 +420,7 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
 
         <p style="margin-top:8px"><strong>Observations</strong> — Rule-based, recalculated from live standings on every page load. Covers position, schedule difficulty, H2H leverage, streak and L10 trends.</p>
 
-        <p style="margin-top:8px"><strong>AI Butchie Bot's AI-nalysis</strong> — Powered by GPT-4o-mini. After each push group game completes, a scheduled process fetches live standings, computes all analytics context (pts, RW, ROW, adjusted SOS, projections, tiebreakers, L10, streaks, H2H remaining), and sends it to the AI. Metropolitan Push insights focus on Metro #2/#3 seeding vs PIT and the bracket implications. Wild Card Push insights focus on WC1/WC2 threats from the bubble. Insights refresh automatically within an hour of any push group game ending.</p>
+        <p style="margin-top:8px"><strong>AI Butchie Bot's AI-nalysis</strong> — Powered by GPT-4o-mini. After each push group game completes, a scheduled process fetches live standings, computes all analytics context (pts, RW, ROW, adjusted SOS, projections, tiebreakers, L10, streaks, H2H remaining), and sends it to the AI. Metropolitan Push insights focus on NYI chasing PHI for Metro #3. Wild Card Push insights focus on NYI chasing OTT for WC2 and fending off DET/CBJ/WSH. Insights refresh automatically within an hour of any push group game ending.</p>
 
         <p style="margin-top:8px"><strong>Rooting Interest</strong> — A composite threat score determines who NYI fans should root against. Factors: pts gap to NYI, projected final pts, adjusted SOS rank, games remaining, H2H games vs NYI remaining, current WC position. Tap any score card involving two push group teams for the full breakdown.</p>
 
@@ -432,7 +445,67 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
 // ═══════════════════════════════════════════════════════════════
 const FULL_SCHEDULE = {"BOS": [["Mar 29", "CBJ", "A"], ["Mar 31", "DAL", "H"], ["Apr 2", "FLA", "A"], ["Apr 4", "TBL", "A"], ["Apr 5", "PHI", "A"], ["Apr 7", "CAR", "A"], ["Apr 11", "TBL", "H"], ["Apr 12", "CBJ", "A"], ["Apr 14", "NJD", "H"]], "BUF": [["Mar 31", "NYI", "H"], ["Apr 2", "OTT", "A"], ["Apr 4", "WSH", "A"], ["Apr 6", "TBL", "H"], ["Apr 8", "NYR", "A"], ["Apr 9", "CBJ", "H"], ["Apr 13", "CHI", "A"], ["Apr 15", "DAL", "H"]], "CAR": [["Mar 29", "MTL", "H"], ["Mar 31", "CBJ", "A"], ["Apr 2", "CBJ", "H"], ["Apr 4", "NYI", "H"], ["Apr 5", "OTT", "A"], ["Apr 7", "BOS", "H"], ["Apr 9", "CHI", "A"], ["Apr 11", "UTA", "A"], ["Apr 13", "PHI", "A"], ["Apr 14", "NYI", "A"]], "CBJ": [["Mar 29", "BOS", "H"], ["Mar 31", "CAR", "H"], ["Apr 2", "CAR", "A"], ["Apr 4", "WPG", "H"], ["Apr 7", "DET", "A"], ["Apr 9", "BUF", "A"], ["Apr 11", "MTL", "A"], ["Apr 12", "BOS", "H"], ["Apr 14", "WSH", "H"]], "DET": [["Mar 31", "PIT", "A"], ["Apr 2", "PHI", "A"], ["Apr 4", "NYR", "A"], ["Apr 5", "MIN", "H"], ["Apr 7", "CBJ", "H"], ["Apr 9", "PHI", "A"], ["Apr 11", "NJD", "H"], ["Apr 13", "TBL", "A"], ["Apr 15", "FLA", "A"]], "FLA": [["Mar 29", "NYR", "A"], ["Mar 31", "OTT", "H"], ["Apr 2", "BOS", "H"], ["Apr 4", "PIT", "A"], ["Apr 5", "PIT", "A"], ["Apr 7", "MTL", "A"], ["Apr 9", "OTT", "A"], ["Apr 11", "TOR", "A"], ["Apr 13", "NYR", "H"], ["Apr 15", "DET", "H"]], "MTL": [["Mar 29", "CAR", "A"], ["Mar 31", "TBL", "A"], ["Apr 2", "NYR", "A"], ["Apr 4", "NJD", "A"], ["Apr 5", "NJD", "H"], ["Apr 7", "FLA", "H"], ["Apr 9", "TBL", "H"], ["Apr 11", "CBJ", "H"], ["Apr 12", "NYI", "A"], ["Apr 14", "PHI", "A"]], "NJD": [["Mar 29", "CHI", "H"], ["Mar 31", "NYR", "A"], ["Apr 2", "WSH", "H"], ["Apr 4", "MTL", "H"], ["Apr 5", "MTL", "A"], ["Apr 7", "PHI", "H"], ["Apr 9", "PIT", "A"], ["Apr 11", "DET", "A"], ["Apr 12", "OTT", "H"], ["Apr 14", "BOS", "A"]], "NYI": [["Mar 30", "PIT", "H"], ["Mar 31", "BUF", "A"], ["Apr 3", "PHI", "H"], ["Apr 4", "CAR", "A"], ["Apr 9", "TOR", "H"], ["Apr 11", "OTT", "H"], ["Apr 12", "MTL", "H"], ["Apr 14", "CAR", "H"]], "NYR": [["Mar 29", "FLA", "H"], ["Mar 31", "NJD", "H"], ["Apr 2", "MTL", "H"], ["Apr 4", "DET", "H"], ["Apr 5", "WSH", "A"], ["Apr 8", "BUF", "H"], ["Apr 11", "DAL", "A"], ["Apr 13", "FLA", "A"], ["Apr 15", "TBL", "H"]], "OTT": [["Mar 31", "FLA", "A"], ["Apr 2", "BUF", "H"], ["Apr 4", "MIN", "H"], ["Apr 5", "CAR", "H"], ["Apr 7", "TBL", "H"], ["Apr 9", "FLA", "H"], ["Apr 11", "NYI", "A"], ["Apr 12", "NJD", "A"], ["Apr 15", "TOR", "H"]], "PHI": [["Mar 29", "DAL", "H"], ["Mar 31", "WSH", "A"], ["Apr 2", "DET", "H"], ["Apr 3", "NYI", "A"], ["Apr 5", "BOS", "H"], ["Apr 7", "NJD", "A"], ["Apr 9", "DET", "H"], ["Apr 11", "WPG", "A"], ["Apr 13", "CAR", "H"], ["Apr 14", "MTL", "H"]], "PIT": [["Mar 30", "NYI", "A"], ["Mar 31", "DET", "H"], ["Apr 2", "TBL", "A"], ["Apr 4", "FLA", "H"], ["Apr 5", "FLA", "H"], ["Apr 9", "NJD", "H"], ["Apr 11", "WSH", "H"], ["Apr 12", "WSH", "A"], ["Apr 14", "STL", "A"]], "TBL": [["Mar 29", "NSH", "H"], ["Mar 31", "MTL", "H"], ["Apr 2", "PIT", "H"], ["Apr 4", "BOS", "H"], ["Apr 6", "BUF", "A"], ["Apr 7", "OTT", "A"], ["Apr 9", "MTL", "A"], ["Apr 11", "BOS", "A"], ["Apr 13", "DET", "H"], ["Apr 15", "NYR", "A"]], "TOR": [["Mar 30", "ANA", "A"], ["Apr 2", "SJS", "A"], ["Apr 4", "LAK", "A"], ["Apr 8", "WSH", "H"], ["Apr 9", "NYI", "A"], ["Apr 11", "FLA", "H"], ["Apr 13", "DAL", "H"], ["Apr 15", "BUF", "A"]], "WSH": [["Mar 31", "PHI", "A"], ["Apr 2", "NJD", "A"], ["Apr 4", "BUF", "H"], ["Apr 5", "NYR", "H"], ["Apr 8", "TOR", "A"], ["Apr 11", "PIT", "A"], ["Apr 12", "PIT", "H"], ["Apr 14", "CBJ", "A"]], "ANA": [["Mar 30", "TOR", "H"], ["Apr 1", "SJS", "A"], ["Apr 3", "STL", "A"], ["Apr 7", "COL", "H"], ["Apr 9", "UTA", "H"], ["Apr 11", "LAK", "A"], ["Apr 13", "CGY", "A"], ["Apr 14", "CGY", "A"], ["Apr 15", "MIN", "A"]], "CGY": [["Mar 30", "COL", "A"], ["Apr 2", "VGK", "A"], ["Apr 4", "MIN", "H"], ["Apr 7", "DAL", "A"], ["Apr 9", "COL", "A"], ["Apr 11", "SEA", "A"], ["Apr 12", "UTA", "H"], ["Apr 14", "COL", "H"], ["Apr 16", "LAK", "H"]], "CHI": [["Mar 29", "NJD", "A"], ["Mar 31", "WPG", "A"], ["Apr 2", "EDM", "A"], ["Apr 4", "SEA", "A"], ["Apr 6", "SJS", "A"], ["Apr 9", "CAR", "H"], ["Apr 11", "STL", "H"], ["Apr 13", "BUF", "H"], ["Apr 15", "SJS", "H"]], "COL": [["Mar 30", "CGY", "H"], ["Apr 1", "VAN", "H"], ["Apr 4", "DAL", "A"], ["Apr 5", "STL", "H"], ["Apr 7", "STL", "A"], ["Apr 9", "CGY", "H"], ["Apr 11", "VGK", "H"], ["Apr 13", "EDM", "A"], ["Apr 14", "CGY", "A"], ["Apr 16", "SEA", "H"]], "DAL": [["Mar 29", "PHI", "A"], ["Mar 31", "BOS", "A"], ["Apr 2", "WPG", "H"], ["Apr 4", "COL", "H"], ["Apr 7", "CGY", "H"], ["Apr 9", "MIN", "H"], ["Apr 11", "NYR", "H"], ["Apr 13", "TOR", "A"], ["Apr 15", "BUF", "A"]], "EDM": [["Mar 31", "SEA", "A"], ["Apr 2", "CHI", "H"], ["Apr 4", "VGK", "H"], ["Apr 7", "UTA", "A"], ["Apr 8", "SJS", "A"], ["Apr 11", "LAK", "A"], ["Apr 13", "COL", "H"], ["Apr 16", "VAN", "H"]], "LAK": [["Apr 1", "STL", "A"], ["Apr 2", "NSH", "H"], ["Apr 4", "TOR", "H"], ["Apr 6", "NSH", "H"], ["Apr 9", "VAN", "H"], ["Apr 11", "EDM", "H"], ["Apr 13", "SEA", "A"], ["Apr 14", "VAN", "A"], ["Apr 16", "CGY", "A"]], "MIN": [["Apr 2", "VAN", "H"], ["Apr 4", "OTT", "A"], ["Apr 5", "DET", "A"], ["Apr 7", "SEA", "H"], ["Apr 9", "DAL", "A"], ["Apr 11", "NSH", "A"], ["Apr 13", "STL", "A"], ["Apr 14", "ANA", "H"]], "NSH": [["Mar 29", "TBL", "A"], ["Apr 2", "LAK", "A"], ["Apr 4", "SJS", "A"], ["Apr 6", "LAK", "A"], ["Apr 7", "ANA", "A"], ["Apr 9", "UTA", "A"], ["Apr 11", "MIN", "H"], ["Apr 13", "SJS", "H"], ["Apr 16", "ANA", "H"]], "SEA": [["Mar 31", "EDM", "A"], ["Apr 2", "UTA", "H"], ["Apr 4", "CHI", "H"], ["Apr 6", "WPG", "A"], ["Apr 7", "MIN", "A"], ["Apr 9", "VGK", "H"], ["Apr 11", "CGY", "H"], ["Apr 13", "LAK", "H"], ["Apr 15", "VGK", "A"], ["Apr 16", "COL", "A"]], "SJS": [["Mar 30", "STL", "H"], ["Apr 1", "ANA", "H"], ["Apr 2", "TOR", "H"], ["Apr 4", "NSH", "H"], ["Apr 6", "CHI", "H"], ["Apr 8", "EDM", "H"], ["Apr 9", "ANA", "A"], ["Apr 11", "VAN", "H"], ["Apr 13", "NSH", "A"], ["Apr 15", "CHI", "A"], ["Apr 16", "WPG", "A"]], "STL": [["Mar 30", "SJS", "A"], ["Apr 1", "LAK", "H"], ["Apr 3", "ANA", "H"], ["Apr 5", "COL", "A"], ["Apr 7", "COL", "H"], ["Apr 9", "WPG", "H"], ["Apr 11", "CHI", "A"], ["Apr 13", "MIN", "H"], ["Apr 14", "PIT", "H"], ["Apr 16", "UTA", "A"]], "UTA": [["Mar 29", "FLA", "H"], ["Apr 2", "SEA", "A"], ["Apr 4", "VAN", "H"], ["Apr 7", "EDM", "H"], ["Apr 9", "NSH", "H"], ["Apr 11", "CAR", "H"], ["Apr 14", "WPG", "H"], ["Apr 16", "STL", "H"]], "VGK": [["Mar 30", "VAN", "H"], ["Apr 2", "CGY", "H"], ["Apr 4", "EDM", "A"], ["Apr 7", "VAN", "A"], ["Apr 9", "SEA", "A"], ["Apr 11", "COL", "A"], ["Apr 13", "WPG", "H"], ["Apr 15", "SEA", "H"]], "VAN": [["Mar 30", "VGK", "A"], ["Apr 1", "COL", "A"], ["Apr 2", "MIN", "A"], ["Apr 4", "UTA", "H"], ["Apr 7", "VGK", "H"], ["Apr 9", "LAK", "A"], ["Apr 11", "SJS", "A"], ["Apr 12", "ANA", "A"], ["Apr 14", "LAK", "H"], ["Apr 16", "EDM", "A"]], "WPG": [["Mar 31", "CHI", "A"], ["Apr 2", "DAL", "A"], ["Apr 4", "CBJ", "A"], ["Apr 6", "SEA", "H"], ["Apr 9", "STL", "A"], ["Apr 11", "PHI", "H"], ["Apr 13", "VGK", "A"], ["Apr 14", "UTA", "A"], ["Apr 16", "SJS", "H"]]};
 const TEAM_INFO     = {"CAR": ["E", "MET"], "BUF": ["E", "ATL"], "TBL": ["E", "ATL"], "MTL": ["E", "ATL"], "BOS": ["E", "ATL"], "NYI": ["E", "MET"], "PIT": ["E", "MET"], "CBJ": ["E", "MET"], "OTT": ["E", "ATL"], "DET": ["E", "ATL"], "PHI": ["E", "MET"], "WSH": ["E", "MET"], "NJD": ["E", "MET"], "TOR": ["E", "ATL"], "FLA": ["E", "ATL"], "NYR": ["E", "MET"], "COL": ["W", "CEN"], "DAL": ["W", "CEN"], "MIN": ["W", "CEN"], "ANA": ["W", "PAC"], "EDM": ["W", "PAC"], "UTA": ["W", "CEN"], "VGK": ["W", "PAC"], "NSH": ["W", "CEN"], "LAK": ["W", "PAC"], "SEA": ["W", "PAC"], "WPG": ["W", "CEN"], "SJS": ["W", "PAC"], "STL": ["W", "CEN"], "CGY": ["W", "PAC"], "CHI": ["W", "CEN"], "VAN": ["W", "PAC"]};
-const RACE_GROUP    = new Set(["BOS", "CBJ", "DET", "MTL", "NYI", "OTT", "PHI", "PIT"]);
+// RACE_GROUP is computed dynamically after standings load
+// Seed: all teams that could realistically be in the East WC/Metro race
+// Gets pruned to teams not yet mathematically eliminated from WC2
+const RACE_GROUP_SEED = new Set(["CBJ","DET","NYI","OTT","PHI","PIT","WSH","BOS","MTL","NJD","NYR","TBL","TOR","BUF","FLA","CAR"]);
+let RACE_GROUP = new Set(["CBJ","DET","NYI","OTT","PHI","PIT","WSH"]); // default until standings load
+
+function rebuildRaceGroup(){
+  // Build the playoff race group: teams NYI is actually competing with or against.
+  // Threshold = nyiGl + 2, capped at 4.
+  // e.g. 4 GL → 4pts | 3 GL → 4pts | 2 GL → 4pts | 1 GL → 3pts | 0 GL → 2pts
+  const wcp = wcPool();
+  const met = sortedDiv('MET');
+  if(!ST['NYI']) return;
+
+  const nyi = ST['NYI'];
+  const nyiGl = 82 - (nyi.wins + nyi.losses + nyi.otl);
+  const threshold = Math.min(nyiGl + 2, 4);
+
+  const newGroup = new Set(['NYI']);
+
+  // ── WC race ──────────────────────────────────────────────────
+  // Reference point is WC2 — that's the spot NYI is chasing.
+  // Include: WC2 holder always (the direct target) + bubble teams within threshold of WC2
+  // Exclude: WC1 if they're safely ahead (not part of NYI's race)
+  const wc2Holder = (wcp[1] && wcp[1] !== 'NYI') ? wcp[1]
+                  : (wcp[0] && wcp[0] !== 'NYI') ? wcp[0] : null;
+  const wc2Pts = wc2Holder && ST[wc2Holder] ? ST[wc2Holder].pts : 999;
+
+  // Always include WC2 holder
+  if(wc2Holder) newGroup.add(wc2Holder);
+
+  // Include WC1 only if NYI is close enough to reach them
+  const wc1Holder = wcp[0] && wcp[0] !== 'NYI' && wcp[0] !== wc2Holder ? wcp[0] : null;
+  if(wc1Holder && ST[wc1Holder] && ST[wc1Holder].pts - nyi.pts <= threshold) {
+    newGroup.add(wc1Holder);
+  }
+
+  // Include bubble teams: within threshold pts of WC2 AND mathematically alive
+  wcp.slice(2).forEach(t => {
+    if(!t || !ST[t]) return;
+    const gl = 82 - (ST[t].wins + ST[t].losses + ST[t].otl);
+    const maxPts = ST[t].pts + gl * 2;
+    const gap = wc2Pts - ST[t].pts; // how far below WC2 they are
+    if(gap <= threshold && maxPts >= wc2Pts) newGroup.add(t);
+  });
+
+  // ── Metro race ───────────────────────────────────────────────
+  // Include any Metro team within threshold pts of NYI (above or below)
+  // AND still mathematically relevant (they can still reach NYI, or NYI can still reach them)
+  met.forEach(t => {
+    if(!t || !ST[t] || t === 'NYI') return;
+    const gl = 82 - (ST[t].wins + ST[t].losses + ST[t].otl);
+    const maxPts = ST[t].pts + gl * 2;
+    const gap = Math.abs(ST[t].pts - nyi.pts);
+    const nyiCanCatch = nyi.pts + nyiGl * 2 >= ST[t].pts;
+    const theyCanCatch = maxPts >= nyi.pts;
+    if(gap <= threshold && (nyiCanCatch || theyCanCatch)) newGroup.add(t);
+  });
+
+  RACE_GROUP = newGroup;
+}
 const TEAM_COLORS   = {"ANA": "#F47A38", "BOS": "#FFB81C", "BUF": "#4a90d9", "CAR": "#f87171", "CBJ": "#4a90d9", "CGY": "#f87171", "CHI": "#f87171", "COL": "#c084fc", "DAL": "#4ade80", "DET": "#f87171", "EDM": "#FF4C00", "FLA": "#f87171", "LAK": "#94a3b8", "MIN": "#4ade80", "MTL": "#f87171", "NJD": "#f87171", "NSH": "#FFB81C", "NYI": "#F47D30", "NYR": "#60a5fa", "OTT": "#f87171", "PHI": "#F74902", "PIT": "#FCB514", "SEA": "#38bdf8", "SJS": "#22d3ee", "STL": "#60a5fa", "TBL": "#60a5fa", "TOR": "#60a5fa", "UTA": "#69B3E7", "VAN": "#60a5fa", "VGK": "#B4975A", "WPG": "#60a5fa", "WSH": "#C8102E"};
 
 // ═══════════════════════════════════════════════════════════════
@@ -569,7 +642,7 @@ function projectedStandings() {
     result[p.t] = {projPts: p.pts, inPlayoffs, wcRank: i+1, tbNote};
   });
 
-  // Also check Metro #2/#3 boundary (PIT vs NYI etc)
+  // Check Metro #3 boundary (PHI vs NYI — PHI holds it, NYI chasing)
   if (metTeams[1] && metTeams[2] && metTeams[1].pts === metTeams[2].pts) {
     const m2 = metTeams[1], m3 = metTeams[2];
     if (m2.rw !== m3.rw) {
@@ -621,47 +694,6 @@ function isLastTwoGames(opp, gameDateStr) {
   return gamesAfter < 2;
 }
 
-// ── MTL/ATL Watch helpers ──────────────────────────────────────
-function mtlInWC() {
-  // MTL has dropped out of ATL top 3
-  const atl = sortedDiv('ATL');
-  return atl.indexOf('MTL') >= 3;
-}
-function mtlMayDropToWC() {
-  // BOS can still mathematically catch MTL
-  const mtl = ST['MTL'], bos = ST['BOS'];
-  if(!mtl || !bos) return false;
-  const bosGl = 82-(bos.wins+bos.losses+bos.otl);
-  return bos.pts + bosGl*2 >= mtl.pts;
-}
-function mtlRootingContext() {
-  const nyi=ST['NYI'], mtl=ST['MTL'], bos=ST['BOS'];
-  if(!nyi||!mtl||!bos) return null;
-  if(!mtlMayDropToWC()&&!mtlInWC()) return null;
-  const met=sortedDiv('MET'), nyiMetRank=met.indexOf('NYI')+1;
-  const gap=mtl.pts-nyi.pts;
-  const bosGl=82-(bos.wins+bos.losses+bos.otl);
-  if(mtlInWC()){
-    return {
-      rootAgainst:'MTL',
-      reason:`MTL is in WC at ${mtl.pts}pts, ${Math.abs(gap)}pts ${gap>0?'ahead of':'behind'} NYI. Direct WC competitor — root AGAINST MTL.`,
-      nuance: nyiMetRank<=2?`NYI holds MET#${nyiMetRank} so this is lower stakes, but every point matters.`:null
-    };
-  }
-  // MTL still in ATL but BOS can catch them
-  if(nyiMetRank<=2){
-    return {
-      rootFor:'MTL',
-      reason:`MTL is ATL#3 (${mtl.pts}pts, ${gap}pts ahead of NYI). BOS (${bos.pts}pts, ${bosGl}GL) can still catch them. If BOS passes MTL, Montreal enters WC ${gap}pts ahead of NYI. Keep MTL in ATL — root FOR MTL in BOS-MTL games.`,
-      nuance:`This flips if NYI drops to MET#3 or WC — then root against MTL.`
-    };
-  }
-  return {
-    rootAgainst:'MTL',
-    reason:`MTL (${mtl.pts}pts) is ${Math.abs(gap)}pts ${gap>0?'ahead of':'behind'} NYI in WC chase. Root AGAINST MTL.`,
-    nuance:null
-  };
-}
 
 function rawSos(team) {
   const rem = remaining(team);
@@ -757,19 +789,12 @@ function threatScore(team) {
 function rootingInterest(away, home) {
   if(away==='NYI'||home==='NYI') return null;
 
-  // BOS vs MTL: conditional — depends on NYI's Metro standing
-  if((away==='BOS'&&home==='MTL')||(away==='MTL'&&home==='BOS')){
-    const ctx=mtlRootingContext();
-    if(!ctx) return null;
-    if(ctx.rootFor==='MTL') return 'MTL'; // root for MTL = root against BOS
-    if(ctx.rootAgainst==='MTL') return 'BOS';
-    return null;
-  }
-
   const ar=RACE_GROUP.has(away), hr=RACE_GROUP.has(home);
   if(!ar&&!hr) return null;
+  // One rival, one non-rival: root for the non-rival (hurts the rival)
   if(ar&&!hr) return home;
   if(hr&&!ar) return away;
+  // Both rivals: root for whoever hurts the bigger threat
   return threatScore(away)>=threatScore(home)?home:away;
 }
 
@@ -808,22 +833,6 @@ function threatReason(team) {
   if(rank>=20) risks.push(`easy adj sched (#${rank})`);
   if(proj<nyi.pts) risks.push(`pace falls short at ${proj}pts`);
 
-  // MTL special context
-  if(team==='MTL'){
-    const ctx=mtlRootingContext();
-    if(ctx){
-      if(ctx.rootFor==='MTL') return 'Root FOR MTL — '+ctx.reason+(ctx.nuance?' '+ctx.nuance:'');
-      if(ctx.rootAgainst==='MTL') return 'Root AGAINST MTL — '+ctx.reason+(ctx.nuance?' '+ctx.nuance:'');
-    }
-  }
-  // MTL special context
-  if(team==='MTL'){
-    const ctx=mtlRootingContext();
-    if(ctx){
-      if(ctx.rootFor==='MTL') return 'Root FOR MTL — '+ctx.reason+(ctx.nuance?' '+ctx.nuance:'');
-      if(ctx.rootAgainst==='MTL') return 'Root AGAINST MTL — '+ctx.reason+(ctx.nuance?' '+ctx.nuance:'');
-    }
-  }
   return parts.join(', ')+(risks.length?' · risk: '+risks.join(', '):'');
 }
 
@@ -861,6 +870,7 @@ async function fetchStandings() {
     if(dateEl) dateEl.textContent='Standings as of '+
       new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
     setStatus('');
+    rebuildRaceGroup(); // dynamically prune eliminated teams from race group
     return true;
   } catch(e) {
     setStatus('⚠ Standings unavailable: '+e.message);
@@ -971,6 +981,7 @@ function renderRace() {
       <td><span class="pos-badge ${pos.cls}">${pos.lbl}</span></td>
       <td class="num">${gp}</td>
       <td class="num ${ptsCls}">${s.pts}</td>
+      <td class="num muted" style="font-size:.7rem">${gp ? ((s.pts/(gp*2)).toFixed(3)).replace(/^0/,'') : '—'}</td>
       <td class="num">${s.wins}</td>
       <td class="num hide-mobile muted">${s.losses}</td>
       <td class="num hide-mobile muted">${s.otl}</td>
@@ -992,19 +1003,41 @@ function renderRace() {
     </tr>`);
   }
 
-  banner('Metropolitan Division Push','ban-met');
-  [met[1],met[2]].filter(Boolean).forEach(raceRow);
+  banner('Metropolitan Division Push — Chasing Metro #3','ban-met');
+  const nyiPts = ST['NYI']?.pts || 0;
+  const nyiMetRaceGl = ST['NYI'] ? 82-(ST['NYI'].wins+ST['NYI'].losses+ST['NYI'].otl) : 4;
+  const raceThreshold = Math.min(nyiMetRaceGl + 2, 4);
 
-  // ATL Watch — MTL if BOS can still catch them or MTL already dropped
-  if(ST['MTL']&&(mtlInWC()||(mtlMayDropToWC()&&ST['BOS']&&(ST['MTL'].pts-ST['BOS'].pts)<=5))){
-    const atlLabel=mtlInWC()?'🔴 ATLANTIC WATCH: MTL Dropped to WC':'👀 ATLANTIC WATCH: MTL (ATL#3) at Risk of WC Drop';
-    rows.push(`<tr class="race-sec-hd"><td colspan="16"><span class="sec-banner" style="display:block;padding:5px 10px;font-family:'Barlow Condensed',sans-serif;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;background:rgba(248,113,113,.1);color:#f87171">${atlLabel}</span></td></tr>`);
-    raceRow('MTL');
-  }
+  // Metro section: NYI + teams within threshold pts of NYI in either direction
+  // Never include Met #1 (division leader, out of reach)
+  // Met #2 only if their lead over NYI ≤ threshold (actually closeable)
+  // Met #3 (the direct target) always included if within threshold
+  const metRaceTeams = met.filter(t => {
+    if(!t || !ST[t]) return false;
+    if(t === 'NYI') return true; // always include NYI — they're the team chasing
+    const gap = Math.abs(ST[t].pts - nyiPts);
+    return gap <= raceThreshold;
+  });
+  metRaceTeams.sort((a,b) => ST[b].pts - ST[a].pts);
+  // Ensure Metro #3 holder is always shown (it's the direct target) even if 1pt outside threshold
+  const met3 = met.find(t => t && t !== 'NYI' && met.indexOf(t) === 2);
+  if(met3 && ST[met3] && !metRaceTeams.includes(met3)) metRaceTeams.unshift(met3);
+  metRaceTeams.filter(Boolean).forEach(raceRow);
 
   banner('Wild Card','ban-wc');
-  wcp.slice(0,2).forEach(raceRow);
-  const bubble=wcp.slice(2).filter(t=>ST[wcp[1]]&&ST[wcp[1]].pts-ST[t].pts<=6);
+  // WC section: only show WC2 holder (the direct target NYI is chasing)
+  // Skip WC1 if they're safely ahead — they're not part of NYI's race
+  const wc1 = wcp[0], wc2 = wcp[1];
+  const wc1Safe = wc1 && ST[wc1] && ST[wc1].pts - nyiPts > raceThreshold;
+  if(!wc1Safe && wc1) raceRow(wc1); // only show WC1 if NYI could realistically reach them
+  if(wc2) raceRow(wc2); // always show WC2 — that's the direct target
+
+  const wc2Pts2 = ST[wcp[1]] ? ST[wcp[1]].pts : 0;
+  const bubble = wcp.slice(2).filter(t => {
+    if(!ST[t]) return false;
+    const gl = 82-(ST[t].wins+ST[t].losses+ST[t].otl);
+    return wc2Pts2 - ST[t].pts <= raceThreshold && ST[t].pts + gl*2 >= wc2Pts2;
+  });
   if(bubble.length){banner('Bubble','ban-bub');bubble.forEach(raceRow);}
 
   tbody.innerHTML=rows.join('');
@@ -1205,11 +1238,36 @@ function renderClinch(){
     `Probability = chance NYI finishes ahead of cutline team on easiest available path`
   ].join(' · ');
 
+  // MoneyPuck comparison helper
+  function mpCompare(ourPct, mpVal) {
+    if (mpVal === null || mpVal === undefined || isNaN(mpVal)) return '';
+    const mpPct = Math.round(mpVal * 100);
+    const delta = ourPct - mpPct;
+    const arrow = delta > 2 ? '↑' : delta < -2 ? '↓' : '→';
+    const col = delta > 2 ? '#4ade80' : delta < -2 ? '#f87171' : '#94a3b8';
+    const sign = delta > 0 ? '+' : '';
+    return `<div style="font-size:.57rem;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:4px">
+      <span style="opacity:.6">MoneyPuck:</span>
+      <span style="color:${col};font-weight:700">${mpPct}% <span style="font-size:.65em">${arrow}</span></span>
+      <span style="color:${col};opacity:.8">(${sign}${delta} vs MP)</span>
+    </div>`;
+  }
+
+  const mpMade = MP_ODDS ? Math.round(MP_ODDS.madePlayoffs * 100) : null;
+  const mpMadeHtml = mpMade !== null
+    ? `<div style="font-size:.57rem;color:var(--muted);margin-top:5px;border-top:1px solid rgba(255,255,255,.07);padding-top:5px;display:flex;align-items:center;gap:5px">
+        <span style="opacity:.55">MoneyPuck overall:</span>
+        <span style="font-weight:800;color:${mpMade>=50?'#4ade80':mpMade>=30?'#f59e0b':'#f87171'}">${mpMade}%</span>
+        ${(() => { const d=prob-mpMade; const s=d>0?'+':''; const c=d>2?'#4ade80':d<-2?'#f87171':'#94a3b8'; return `<span style="color:${c};opacity:.9">(${s}${d} vs our model)</span>`; })()}
+      </div>`
+    : `<div style="font-size:.56rem;color:var(--muted);opacity:.4;margin-top:4px">MoneyPuck: loading…</div>`;
+
   let html=`<div class="cc cc-prob" data-clinch="${probPopup.replace(/"/g,'&quot;')}" style="cursor:pointer">
     <div class="cc-lbl">Playoff Probability <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
     <div class="cc-val" style="color:${probColor};font-size:2rem">${prob}%</div>
     <span class="cc-badge" style="background:${probColor}22;color:${probColor};border:1px solid ${probColor}44">${probLabel}</span>
     <div style="font-size:.58rem;color:var(--muted);margin-top:4px">${nyiGl} games left · tap for details</div>
+    ${mpMadeHtml}
   </div>
   <div class="cc cc-pace">
     <div class="cc-lbl">NYI Projected</div>
@@ -1306,6 +1364,11 @@ function renderClinch(){
       }
     }
 
+    // MoneyPuck per-seed comparison
+    const mpFieldMap = {WC2:'wildcard2',WC1:'wildcard1',METRO3:'divisionPlace3',METRO2:'divisionPlace2'};
+    const mpSeedVal = MP_ODDS ? MP_ODDS[mpFieldMap[pos]] : null;
+    const mpSeedHtml = mpCompare(pp, mpSeedVal);
+
     html+=`<div class="cc" data-clinch="${pop}" style="cursor:pointer">
       <div class="cc-lbl">${lbl} <span style="font-size:.55rem;opacity:.5">ⓘ</span></div>
       <div style="display:flex;align-items:baseline;gap:8px">
@@ -1313,7 +1376,7 @@ function renderClinch(){
         <div style="font-size:1.1rem;font-weight:800;color:${ppColor}">${pp}%</div>
       </div>
       <div style="font-size:.58rem;color:var(--muted);margin-top:1px">chance of reaching this seed</div>
-      ${badge}${tbCard}
+      ${badge}${tbCard}${mpSeedHtml}
     </div>`;
   });
   row.innerHTML=html;
@@ -1370,49 +1433,130 @@ function renderObservations(){
   const met=sortedDiv('MET'), wcp=wcPool();
   const metRank=met.indexOf('NYI')+1;
   const nyiRem=remaining('NYI');
-  const h2h=nyiRem.filter(g=>RACE_GROUP.has(g[1]));
 
   const adjNote=haircuts.length?` (adj for ${haircuts.join(',')} likely resting)`:'';
 
-    // Metro obs context
-  const pit=ST['PIT'], pitGp=pit?pit.wins+pit.losses+pit.otl:0, pitGl=82-pitGp;
-  const pitGap=pit?pit.pts-nyi.pts:0; // positive = PIT ahead
-  const nyiRWvsRivals=pit?nyi.rw-pit.rw:0; // positive = NYI leads RW tb
-  const nyiROWvsRivals=pit?nyi.row-pit.row:0;
-  const h2hVsPIT=nyiRem.filter(g=>g[1]==='PIT');
-  const h2hDates=h2h.map(g=>`${g[2]==='H'?'vs':'@'}${g[1]} ${g[0]}`).join(', ');
+  // ── Derive targets dynamically from live standings ─────────────
+  // Metro #3 target: whoever currently holds Metro #3 that isn't NYI
+  const met3Team = met.filter(t=>t&&t!=='NYI')[2] || null; // 3rd non-NYI metro team
+  const met3Holder = met.slice(0,4).find(t=>t&&t!=='NYI'&&met.indexOf(t)===2) || // exact #3
+                     met.filter(t=>t&&t!=='NYI')[1] || null; // fallback: 2nd non-NYI (NYI may already hold #3)
+  // Simpler: who is currently in Metro #3 spot?
+  const metNonNYI = met.filter(t=>t&&t!=='NYI');
+  const metro3Holder = metNonNYI[1] || null; // the team holding the 3rd metro spot (0=Metro1, 1=Metro2, so non-NYI[1]=Metro3 if NYI not in top2)
+  // Actually: met[2] is current Metro#3. If it's NYI, no need to chase.
+  const metTarget = met[2]&&met[2]!=='NYI' ? met[2] : met[3]&&met[3]!=='NYI' ? met[3] : null;
+
+  // WC2 target: whoever currently holds WC2 that isn't NYI
+  const wc2Target = wcp[1]&&wcp[1]!=='NYI' ? wcp[1] : wcp[2]&&wcp[2]!=='NYI' ? wcp[2] : null;
+
+  // Metro #2 holder (usually locked — show as context)
+  const met2Holder = met[1]&&met[1]!=='NYI' ? met[1] : met[0]&&met[0]!=='NYI' ? met[0] : null;
+
+  // Metro obs context — derive from live standings
+  const pit = met2Holder ? ST[met2Holder] : null;
+  const pitTeam = met2Holder;
+  const pitGp = pit ? pit.wins+pit.losses+pit.otl : 0;
+  const pitGl = 82-pitGp;
+
+  const phi = metTarget ? ST[metTarget] : null; // whoever holds Metro #3
+  const phiTeam = metTarget;
+  const phiGap = phi ? phi.pts-nyi.pts : 0;
+  const phiRW = phi ? nyi.rw-phi.rw : 0;
+  const h2hVsPIT = nyiRem.filter(g=>g[1]===pitTeam);
+  const h2hVsPHI = nyiRem.filter(g=>g[1]===phiTeam);
+
+  // ── H2H: only count games vs teams NYI is directly racing against ─
+  // True rivals = teams in RACE_GROUP that aren't NYI and aren't already
+  // safely locked into Metro top-2 (those spots are out of reach)
+  const trueRivals = new Set([...RACE_GROUP].filter(t => t && t !== 'NYI' && ST[t]));
+  const h2hTrue = nyiRem.filter(g => trueRivals.has(g[1]));
+  const h2hDates = h2hTrue.map(g=>`${g[2]==='H'?'vs':'@'}${g[1]} ${g[0]}`).join(', ');
+
+  // NYI's current Metro position
+  const nyiMetPos = met.indexOf('NYI')+1; // 1-based
+  const nyiInMetro3 = nyiMetPos > 0 && nyiMetPos <= 3;
+
+  // ── Metro #2 card: only show if lead is closeable ─────────────
+  // Closeable = NYI could catch them if NYI wins out AND they lose out
+  const pitMaxCloseableGap = nyiGl * 2; // max pts NYI can gain over PIT if NYI wins out and PIT loses out
+  const pitLead = pit ? pit.pts - nyi.pts : 999;
+  const pitIsCloseable = pitLead <= pitMaxCloseableGap;
 
   const metObs=[
-    {lbl:'🏒 Metro #2 Tiebreaker Race',txt:pit
-      ?`PIT leads by <strong>${pitGap}pt${pitGap!==1?'s':''}</strong> and ${nyiRWvsRivals<0?`also holds the RW tiebreaker (PIT ${pit.rw} vs NYI ${nyi.rw}) — NYI would need to close BOTH gaps`:`but NYI leads the RW tiebreaker ${nyi.rw}-${pit.rw} — if tied on pts, NYI wins Metro #2`}. ${h2hVsPIT.length?`The <strong>${h2hVsPIT[0][0]} NYI-PIT game</strong> is the pivotal moment for this race.`:`No more H2H vs PIT — both teams must be tracked independently.`}`
-      :'Metro #2 race context unavailable.'},
-    {lbl:'⚠️ Schedule Burden',txt:`NYI has the <strong>#${nyiRank} hardest remaining schedule</strong> while rivals have easier paths. NYI projects <strong>${nyiProj}pts</strong> at current pace${pit?` vs PIT's projection of ${projPts('PIT')}pts`:''} — the schedule gap means NYI must outperform pace just to hold position.`},
-    {lbl:'⚔️ H2H Swing Games',txt:h2h.length
-      ?`<strong>${h2h.length} of ${nyiGl} remaining games are direct H2H</strong>: ${h2hDates}. Each win adds 2pts AND costs a rival 2pts — a 4-pt swing. These are NYI's best path to improving their position.`
-      :`No H2H games remaining. NYI's playoff fate is now decided by running the table and watching rivals.`}
+    {lbl:`🏒 Metro #3 — ${phiTeam||'Target'} in the Seat`,txt:phi&&phiTeam
+      ?`${phiTeam} currently holds Metro #3 at <strong>${phi.pts}pts</strong>, ${phiGap>0?`${phiGap}pt${phiGap!==1?'s':''} ahead of NYI (${nyi.pts}pts)`:phiGap===0?`tied with NYI at ${nyi.pts}pts`:`NYI leads by ${Math.abs(phiGap)}pts`}. ${
+        phiGap>0
+          ? phiRW>0
+            ? `NYI trails in pts but leads ${phiTeam} on the RW tiebreaker (NYI ${nyi.rw} vs ${phiTeam} ${phi.rw}) — closing the pts gap is priority #1.`
+            : phiRW<0
+              ? `${phiTeam} leads in pts AND the RW tiebreaker (${phiTeam} ${phi.rw} vs NYI ${nyi.rw}) — NYI needs to close both.`
+              : `${phiTeam} leads by pts; RW is tied at ${nyi.rw} — ROW (NYI ${nyi.row} vs ${phiTeam} ${phi.row}) would be next tiebreaker.`
+          : phiGap===0
+            ? phiRW>0
+              ? `Tied on pts — NYI holds RW tiebreaker (NYI ${nyi.rw} vs ${phiTeam} ${phi.rw}) and would claim Metro #3 right now.`
+              : phiRW<0
+                ? `Tied on pts — ${phiTeam} leads RW (${phiTeam} ${phi.rw} vs NYI ${nyi.rw}). NYI needs to pull ahead in pts.`
+                : `Tied on pts and RW — ROW (NYI ${nyi.row} vs ${phiTeam} ${phi.row}) decides it.`
+            : `NYI leads ${phiTeam} — holding Metro #3 on pts right now. Defend it.`
+      } ${h2hVsPHI.length?`NYI hosts ${phiTeam} on <strong>${h2hVsPHI[0][0]}</strong> — a critical direct swing game.`:`No more H2H vs ${phiTeam} — results must diverge independently.`}`
+      : nyiInMetro3 ? `NYI currently holds Metro #3 at <strong>${nyi.pts}pts</strong>. Hold the spot.` : 'Metro #3 target data unavailable.'},
+    {lbl:'⚔️ H2H Swing Games',txt:h2hTrue.length
+      ?`<strong>${h2hTrue.length} of ${nyiGl} remaining games are direct H2H vs playoff race teams</strong>: ${h2hDates}. Each win adds 2pts AND costs a rival 2pts — a 4-pt swing.`
+      :`No H2H games remaining vs playoff race teams. NYI's fate is decided by running the table and watching rivals.`},
+    // Metro #2 card: only render if the gap is still mathematically closeable
+    ...(pit&&pitTeam&&pitIsCloseable ? [{lbl:`📊 Metro #2 (${pitTeam}) — Gap Narrowing`,txt:`${pitTeam} leads Metro #2 at <strong>${pit.pts}pts</strong> — ${pitLead}pts ahead with ${pitGl} games left. Closeable if NYI wins out and ${pitTeam} stumbles — worth watching.`}] : []),
+    ...(!pitIsCloseable && pit&&pitTeam ? [{lbl:`📊 Metro #2 (${pitTeam}) — Not in Play`,txt:`${pitTeam} has Metro #2 at <strong>${pit.pts}pts</strong> — ${pitLead}pts ahead with ${pitGl} games left. Focus is Metro #3 and WC2.`}] : [])
   ];
   document.getElementById('metro-obs-cards').innerHTML=metObs.map(o=>
     `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
   ).join('');
 
   const wcPos=wcp.indexOf('NYI');
-  const wc2Rival=wcp[1]&&wcp[1]!=='NYI'?wcp[1]:wcp[2];
-  const wc2Gap=wc2Rival?nyi.pts-ST[wc2Rival].pts:0;
-  
-  // Find closest bubble threats (outside WC, within 5pts)
-  const bubbleThreats=wcp.slice(2).filter(t=>t!=='NYI'&&ST[t]&&(nyi.pts-ST[t].pts)<=5)
-    .sort((a,b)=>ST[b].pts-ST[a].pts);
-  const threat1=bubbleThreats[0], threat2=bubbleThreats[1];
-  
-  // Rival vs rival games that help NYI (two bubble teams playing each other)
-  const rvr=nyiRem.length ? [] : [];
-  // Check remaining schedule of bubble teams for matchups between them
-  const bubbleAll=[...wcp.slice(2)].filter(t=>t!=='NYI'&&ST[t]);
+  const wc2Rival = wc2Target;
+  const wc1Rival = wcp[0]&&wcp[0]!=='NYI' ? wcp[0] : null;
+  const wc2Gap = wc2Rival && ST[wc2Rival] ? ST[wc2Rival].pts-nyi.pts : 0;
+  const ott = wc2Rival ? ST[wc2Rival] : null;
+  const ottTeam = wc2Rival;
+  const ottGap = wc2Gap; // positive = WC2 holder ahead
+  const ottRWDef = ott ? ott.rw - nyi.rw : 0; // positive = OTT leads RW
+  // Can NYI actually close the RW gap? Only if deficit ≤ games left
+  const rwGapCloseable = ottRWDef <= nyiGl;
+
+  // WC2 tiebreaker text — realistic about what's achievable
+  function wcTbText(){
+    if(!ott) return '';
+    if(ottGap > 0){
+      if(ottRWDef > nyiGl){
+        // RW gap is uncloseable — pts only path
+        return `${ottTeam} leads both pts and the RW tiebreaker (${ottTeam} ${ott.rw} vs NYI ${nyi.rw}) — the RW gap is too large to close in ${nyiGl} games. NYI must beat them in pts.`;
+      } else if(ottRWDef > 0){
+        return `${ottTeam} leads pts AND the RW tiebreaker (${ottTeam} ${ott.rw} vs NYI ${nyi.rw}) — NYI must win more pts to pass them outright.`;
+      } else if(ottRWDef < 0){
+        return `NYI trails in pts but leads ${ottTeam} on RW (NYI ${nyi.rw} vs ${ottTeam} ${ott.rw}) — close the pts gap and tiebreaker favors NYI.`;
+      } else {
+        return `${ottTeam} leads in pts; RW is tied at ${nyi.rw} — NYI must pass ${ottTeam} in pts.`;
+      }
+    } else {
+      if(ottRWDef < 0) return `Tied on pts — NYI holds RW tiebreaker (NYI ${nyi.rw} vs ${ottTeam} ${ott.rw}) and is currently IN.`;
+      if(ottRWDef > 0) return `Tied on pts — ${ottTeam} leads RW (${ottTeam} ${ott.rw} vs NYI ${nyi.rw}). NYI needs to pull ahead in pts.`;
+      return `Tied on pts and RW — ROW (NYI ${nyi.row} vs ${ottTeam} ${ott.row}) decides it.`;
+    }
+  }
+
+  // Rival-vs-rival: games between two RACE_GROUP teams (both true bubble competitors)
+  // RACE_GROUP is now scoped to actual race teams so no need for extra filtering
+  const bubbleAll = [...RACE_GROUP].filter(t => t !== 'NYI' && t !== wc2Rival && t !== wc1Rival && ST[t]);
+  // Also derive WC1 holder for exclusion — already declared above
   const rvrGames=[];
   const seen=new Set();
   bubbleAll.forEach(t=>{
     const tGl=82-(ST[t].wins+ST[t].losses+ST[t].otl);
-    (FULL_SCHEDULE[t]||[]).slice(-tGl).forEach(g=>{
+    const tRem=(FULL_SCHEDULE[t]||[]).filter(g=>{
+      try{const d=parseGameDate(g[0]);return d>=todayDate();}catch(e){return false;}
+    });
+    tRem.forEach(g=>{
+      // Only games between two actual bubble competitors
       if(bubbleAll.includes(g[1])&&g[2]==='H'){
         const key=[t,g[1]].sort().join('-');
         if(!seen.has(key)){ seen.add(key); rvrGames.push(`${g[1]}@${t} (${g[0]})`); }
@@ -1420,36 +1564,31 @@ function renderObservations(){
     });
   });
 
+  // Check if NYI has a remaining H2H game vs WC2 holder — that's the marquee game
+  const h2hVsOTT = ottTeam ? nyiRem.filter(g => g[1]===ottTeam) : [];
+  const ottH2HNote = h2hVsOTT.length
+    ? ` <strong>NYI hosts ${ottTeam} on ${h2hVsOTT[0][0]}</strong> — a direct 4-pt swing game. A win closes the gap and costs ${ottTeam} 2pts simultaneously.`
+    : '';
+
   const wcObs=[
-    {lbl:'🎯 Closest Threats',txt:threat1
-      ?`<strong>${threat1}</strong> is ${nyi.pts-ST[threat1].pts}pt${nyi.pts-ST[threat1].pts!==1?'s':''} back${threat2?` and <strong>${threat2}</strong> is ${nyi.pts-ST[threat2].pts}pts back`:''}. ${sosRank(threat1)<=16?`${threat1} has a favorable schedule (#${sosRank(threat1)} easiest) — NYI cannot afford to slip.`:`${threat1} faces a tough remaining schedule (#${sosRank(threat1)}) which helps NYI.`}`
-      :'No teams within 5pts \u2014 NYI playoff spot is looking secure.'},
+    {lbl:`🎯 WC2 Gap — Chasing ${ottTeam||'WC2'}`,txt:ott&&ottTeam
+      ?`${ottTeam} holds WC2 at <strong>${ott.pts}pts</strong> — NYI is ${ottGap>0?`<strong>${ottGap}pt${ottGap!==1?'s':''} back</strong>`:`tied at ${nyi.pts}pts`}. ${wcTbText()} With ${nyiGl} games left, every point is essential.`
+      :'WC2 target data unavailable.'},
+    // H2H vs WC2 holder — always surface this as its own card if the game exists
+    ...(h2hVsOTT.length ? [{lbl:`🔥 Direct H2H — NYI vs ${ottTeam}`,txt:`NYI and ${ottTeam} play head-to-head on <strong>${h2hVsOTT[0][0]}</strong>. This is effectively a <strong>4-pt swing game</strong> — an NYI win closes the gap by 2 while costing ${ottTeam} 2pts. ${ottGap>0?`NYI needs to win AND get help to climb above ${ottTeam}.`:`NYI holds WC2 — a win here makes it a cushion.`}`}] : []),
     {lbl:'💥 Rival-vs-Rival Games',txt:rvrGames.length
-      ?`Key bubble matchups still to play: <strong>${rvrGames.slice(0,3).join(', ')}</strong>. These games guarantee one rival gets hurt — NYI should track these closely.`
-      :'No remaining bubble-vs-bubble games \u2014 every team plays non-rivals down the stretch.'},
-    {lbl:'📈 Pace Required',txt:wc2Rival&&ST[wc2Rival]
-      ?(()=>{ const need2=Math.max(0,projPts(wc2Rival)+1-nyi.pts); const expPts=nyiGp?Math.round((nyi.pts/nyiGp)*nyiGl):0; const extra=need2-expPts; return `NYI needs <strong>${need2} more pts</strong> in ${nyiGl} games. Current pace earns ~${expPts}pts — ${extra>0?'need <strong>'+extra+' pts above pace</strong> to clinch':'<strong>already on pace</strong> (+'+Math.abs(extra)+'pts)'}. H2H wins vs rivals are the fastest path there.`; })()
+      ?`Key bubble matchups still to play: <strong>${rvrGames.slice(0,3).join(', ')}</strong>. These guarantee one rival gets hurt — NYI needs to maximize gains while rivals cancel each other out.`
+      :'No remaining bubble-vs-bubble games among race teams — every team plays non-rivals down the stretch.'},
+    {lbl:'📈 Points Needed',txt:ott&&ottTeam
+      ?(()=>{ const need=Math.max(0,ottGap+1); const expPts=nyiGp?Math.round((nyi.pts/nyiGp)*nyiGl):0; const extra=need-expPts; return `NYI needs <strong>${need} more pt${need!==1?'s':''}</strong> to pass ${ottTeam}${need>0?`. Current pace projects ~${expPts}pts — ${extra>0?'need <strong>'+extra+' above pace</strong>':'already on pace if '+ottTeam+' goes cold'}`:' — already ahead in the standings'}. Every point matters.`; })()
       :'Pace calculation unavailable.'}
   ];
   document.getElementById('wc-obs-cards').innerHTML=wcObs.map(o=>
     `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
   ).join('');
 
-  // MTL Watch
-  if(ST['MTL']&&(mtlMayDropToWC()||mtlInWC())){
-    const mtl=ST['MTL'], bos=ST['BOS'];
-    const bosGl=bos?82-(bos.wins+bos.losses+bos.otl):0;
-    const mtlGap=mtl.pts-nyi.pts;
-    const ctx=mtlRootingContext();
-    const rootVerdict=ctx?(ctx.rootFor==='MTL'?'✅ Root FOR MTL — keep them in ATL':'⚠️ Root AGAINST MTL — direct WC threat'):'';
-    const lbl=mtlInWC()?'🔴 MTL Dropped to WC':'👀 ATL Watch — MTL Drop Risk';
-    const txt=mtlInWC()?
-      `MTL has fallen out of ATL top-3 and entered WC at <strong>${mtl.pts}pts</strong> — <strong>${Math.abs(mtlGap)}pts ${mtlGap>0?'ahead of':'behind'} NYI</strong>. ${rootVerdict}`:
-      `MTL is ATL#3 at <strong>${mtl.pts}pts</strong> (${mtlGap>0?mtlGap+'pts ahead of':'tied with'} NYI) but BOS (${bos?bos.pts:0}pts, ${bosGl}GL) can still catch them. If BOS passes MTL, Montreal enters WC ${mtlGap>0?mtlGap+'pts AHEAD of NYI':'level with NYI'}. NYI hosts MTL on <strong>Apr 12</strong>. ${rootVerdict}`;
-    document.getElementById('wc-obs-cards').innerHTML+=
-      `<div class="ins-card" style="border-left-color:#f87171"><div class="ins-lbl">${lbl}</div><p class="ins-txt">${txt}</p></div>`;
-  }
 }
+
 
 async function renderDeepInsights(){
   // Fetch cached AI insights from Netlify Blobs via our proxy
@@ -1572,7 +1711,7 @@ function _dateLabel(offset){
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 function scNavDay(dir){
-  _scoreOffset=Math.max(-14,Math.min(17,_scoreOffset+dir));
+  _scoreOffset=Math.max(-14,Math.min(11,_scoreOffset+dir));
   const eff=_scoreOffset-_apiBaseOffset;
   const lbl=document.getElementById('sc-nav-date');
   const todayBtn=document.getElementById('sc-today-btn');
@@ -1610,7 +1749,7 @@ function _gameLabel(g){
   return s||'';
 }
 
-function _buildCard(away,home,aScore,hScore,state,label){
+function _buildCard(away,home,aScore,hScore,state,label,game){
   const isNYI=away==='NYI'||home==='NYI';
   const isFin=state==='FINAL'||state==='OFF';
   const isLive=state==='LIVE'||state==='CRIT';
@@ -1626,18 +1765,23 @@ function _buildCard(away,home,aScore,hScore,state,label){
   const awayTmCol=TEAM_COLORS[away]||'#cbd5e1';
   const homeTmCol=TEAM_COLORS[home]||'#cbd5e1';
 
-  // Score colors based on rooting interest
+  // ── Score colors ────────────────────────────────────────────────
+  // Both scores same color based on how the team we're rooting for is doing:
+  //   Tied (or pre-game)      → both white
+  //   Root team winning       → both green
+  //   Root team losing        → both red
+  //   No rooting interest     → both white
+  //   NYI game: NYI is always the root team
   let awayScoreCol='#e2e8f0', homeScoreCol='#e2e8f0';
-  if(isNYI){
-    awayScoreCol=away==='NYI'?'var(--org)':'#94a3b8';
-    homeScoreCol=home==='NYI'?'var(--org)':'#94a3b8';
-  } else if(root&&(isLive||isFin)){
-    const rootWin=(root===away&&wa)||(root===home&&wh);
-    const rootLose=(root===away&&!wa&&!isPre)||(root===home&&!wh&&!isPre);
-    if(wa||wh){ // someone is winning
-      awayScoreCol=wa?((root===away)?'#4ade80':'#f87171'):(wh?((root===away)?'#f87171':'#e2e8f0'):'#e2e8f0');
-      homeScoreCol=wh?((root===home)?'#4ade80':'#f87171'):(wa?((root===home)?'#f87171':'#e2e8f0'):'#e2e8f0');
+  if(!isPre){
+    const rootFor = isNYI ? (away==='NYI' ? away : home) : root;
+    if(rootFor && (wa||wh)){
+      const rootWinning = (rootFor===away && wa) || (rootFor===home && wh);
+      const scoreCol = rootWinning ? '#4ade80' : '#f87171';
+      awayScoreCol = scoreCol;
+      homeScoreCol = scoreCol;
     }
+    // tied → stays white (default)
   }
 
   if(isPre){
@@ -1663,8 +1807,45 @@ function _buildCard(away,home,aScore,hScore,state,label){
 
   const dr=reason?`data-reason="${reason.replace(/"/g,'&quot;')}"`:'';
   const border=isNYI?'var(--org)':'rgba(255,255,255,.15)';
-  return `<div class="sc-card ${isNYI?'sc-nyi':''}" ${dr} style="border-left:3px solid ${border}">`+
-    dotHtml+`<span class="sc-matchup">${matchHtml}</span>`+badgeHtml+`</div>`;
+
+  // ── Goal-by-goal summary (collapsed by default) ───────────────
+  let goalsHtml='', goalsToggle='';
+  if((isLive||isFin) && game && Array.isArray(game.goals) && game.goals.length){
+    const PERIOD_LABEL={'1':'1st','2':'2nd','3':'3rd','4':'OT','5':'SO'};
+    const lines = game.goals.map(gl=>{
+      const scorer = gl.firstName&&gl.lastName
+        ? `${gl.firstName.default} ${gl.lastName.default}`
+        : (gl.name&&gl.name.default)||'Unknown';
+      const team = gl.teamAbbrev||'';
+      const tmCol = TEAM_COLORS[team]||'#94a3b8';
+      const per = PERIOD_LABEL[String(gl.period)]||`P${gl.period}`;
+      const time = gl.timeInPeriod||'';
+      const str = gl.strength&&gl.strength!=='ev'
+        ? `<span style="font-size:.58em;opacity:.7"> ${gl.strength.toUpperCase()}</span>` : '';
+      const assists = Array.isArray(gl.assists)&&gl.assists.length
+        ? `<span style="opacity:.5;font-size:.6rem"> (${gl.assists.map(a=>a.lastName&&a.lastName.default?a.lastName.default:(a.name&&a.name.default)||'').filter(Boolean).join(', ')})</span>` : '';
+      return `<div style="display:flex;align-items:center;gap:4px;padding:1px 0">
+        <span style="color:${tmCol};font-weight:800;font-size:.65rem;min-width:28px">${team}</span>
+        <span style="font-size:.65rem;color:#e2e8f0">${scorer}${str}</span>${assists}
+        <span style="font-size:.59rem;color:var(--muted);margin-left:auto;white-space:nowrap">${per} ${time}</span>
+      </div>`;
+    });
+    const gid=('g_'+away+home+aScore+hScore).replace(/[^a-z0-9]/gi,'_');
+    goalsHtml=`<div id="${gid}" class="sc-goals-body">${lines.join('')}</div>`;
+    goalsToggle=`<button class="sc-goals-toggle" onclick="event.preventDefault();event.stopPropagation();var b=document.getElementById('${gid}');var o=b.classList.toggle('open');this.textContent=o?'▴ goals':'▾ goals'">▾ goals</button>`;
+  }
+
+  // ── NHL.com link (inline, not full-card wrapper) ───────────────
+  const gcLink = game&&game.gameCenterLink ? `https://www.nhl.com${game.gameCenterLink}` : null;
+  const gcLinkHtml = gcLink
+    ? `<a href="${gcLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" style="font-size:.56rem;color:#475569;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-decoration:none;letter-spacing:.04em;text-transform:uppercase;padding:0 2px;transition:color .15s" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#475569'">↗ NHL</a>`
+    : '';
+
+  const cardClass = `sc-card ${isNYI?'sc-nyi':''}`;
+  const cardStyle = `border-left:3px solid ${border};flex-direction:column;align-items:flex-start;`;
+  const rightBtns = [badgeHtml, goalsToggle, gcLinkHtml].filter(Boolean).join(' ');
+  const topRow = `<div style="display:flex;align-items:center;gap:5px;width:100%">${dotHtml}<span class="sc-matchup">${matchHtml}</span><span style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0">${rightBtns}</span></div>`;
+  return `<div class="${cardClass}" ${dr} style="${cardStyle}">${topRow}${goalsHtml}</div>`;
 }
 
 function _renderScores(games){
@@ -1700,7 +1881,7 @@ function _renderScores(games){
     return;
   }
   row.innerHTML=filtered.map(g=>{
-    const card=_buildCard(g.awayTeam.abbrev,g.homeTeam.abbrev,g.awayTeam.score||0,g.homeTeam.score||0,g.gameState,_gameLabel(g));
+    const card=_buildCard(g.awayTeam.abbrev,g.homeTeam.abbrev,g.awayTeam.score||0,g.homeTeam.score||0,g.gameState,_gameLabel(g),g);
     const isNYI=g.awayTeam.abbrev==='NYI'||g.homeTeam.abbrev==='NYI';
     return isNYI?`<div class="sc-nyi-wrap">${card}</div>`:card;
   }).join('');
@@ -1921,9 +2102,25 @@ function _showNextGame(bar) {
   bar.style.color = 'rgba(255,255,255,.6)';
 }
 
+// MoneyPuck simulation odds (fetched async, may be null)
+let MP_ODDS = null;
+
+async function fetchMoneyPuck() {
+  try {
+    const r = await fetch('/.netlify/functions/nhl?type=moneypuck');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.error) return;
+    MP_ODDS = d;
+    // Re-render clinch tracker with MP data now available
+    renderClinch();
+  } catch(e) { /* silent — MP is supplemental */ }
+}
+
 async function loadAll(){
   const ok=await fetchStandings();
   if(!ok) return;
+  fetchMoneyPuck(); // async, non-blocking — re-renders clinch when ready
   renderEast();
   renderRace();
   renderClinch();
