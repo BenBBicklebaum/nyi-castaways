@@ -1008,12 +1008,13 @@ function renderRace() {
   const nyiMetRaceGl = ST['NYI'] ? 82-(ST['NYI'].wins+ST['NYI'].losses+ST['NYI'].otl) : 4;
   const raceThreshold = Math.min(nyiMetRaceGl + 2, 4);
 
-  // Metro section: only teams within threshold pts of NYI in either direction
+  // Metro section: NYI + teams within threshold pts of NYI in either direction
   // Never include Met #1 (division leader, out of reach)
   // Met #2 only if their lead over NYI ≤ threshold (actually closeable)
   // Met #3 (the direct target) always included if within threshold
   const metRaceTeams = met.filter(t => {
-    if(!t || t==='NYI' || !ST[t]) return false;
+    if(!t || !ST[t]) return false;
+    if(t === 'NYI') return true; // always include NYI — they're the team chasing
     const gap = Math.abs(ST[t].pts - nyiPts);
     return gap <= raceThreshold;
   });
