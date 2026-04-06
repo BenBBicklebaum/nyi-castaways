@@ -108,5 +108,38 @@ exports.handler = async (event) => {
     }
   }
 
+  // ── Islanders News Feed (Google News RSS) ─────────────────────
+  if (type === 'news') {
+    try {
+      const query = encodeURIComponent('New York Islanders NHL');
+      const rssUrl = `https://news.google.com/rss/search?q=${query}&hl=en-US&gl=US&ceid=US:en`;
+      const r = await fetchUrl(rssUrl);
+      if (r.status !== 200) throw new Error('HTTP ' + r.status);
+
+      // Parse RSS XML — extract up to 10 items
+      const xml = r.body;
+      const items = [];
+      const itemRx = /<item>([\s\S]*?)<\/item>/g;
+      let m;
+      while ((m = itemRx.exec(xml)) !== null && items.length < 10) {
+        const block = m[1];
+        const get = (tag) => {
+          const rx = new RegExp(`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`, 'i');
+          const r = rx.exec(block);
+          return r ? r[1].trim() : '';
+        };
+        const title   = get('title').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"');
+        const link    = get('link');
+        const pubDate = get('pubDate');
+        const source  = get('source') || (block.match(/<source[^>]*>([^<]+)<\/source>/)?.[1] || '');
+        if (title && link) items.push({ title, link, pubDate, source });
+      }
+
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ items, fetchedAt: new Date().toISOString() }) };
+    } catch(e) {
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ items: [], error: e.message }) };
+    }
+  }
+
   return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Unknown type: ' + type }) };
 };
