@@ -39,7 +39,7 @@ body{background:var(--bg);color:var(--txt);font-family:'Barlow',sans-serif;font-
 .sc-lbl{font-family:'Barlow Condensed',sans-serif;font-size:.58rem;font-weight:800;letter-spacing:.12em;color:var(--org);text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
 .sc-row{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .sc-row .sc-nyi-wrap{grid-column:1/-1}
-.sc-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:5px;min-width:0}
+.sc-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:3px 7px;display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden}
 a.sc-card{display:block;transition:background .15s,border-color .15s}a.sc-card:hover{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.22)}a.sc-card:active{background:rgba(255,255,255,.15)}
 .sc-goals-toggle{background:none;border:none;color:#64748b;font-size:.58rem;font-weight:700;font-family:'Barlow Condensed',sans-serif;letter-spacing:.04em;cursor:pointer;padding:0 2px;display:inline-flex;align-items:center;gap:2px;text-transform:uppercase;transition:color .15s}
 .sc-goals-toggle:hover{color:#94a3b8}
@@ -188,6 +188,14 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
 
 /* FOOTER */
 .footer{text-align:center;padding:16px;font-size:.7rem;color:var(--muted);border-top:1px solid var(--bdr);margin-top:20px;background:rgba(0,0,0,.2)}
+.news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px}
+.news-card{background:var(--srf);border:1px solid var(--bdr);border-radius:8px;padding:11px 13px;display:flex;flex-direction:column;gap:6px;transition:border-color .15s,background .15s}
+.news-card:hover{border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.05)}
+.news-card a{text-decoration:none;color:var(--txt)}
+.news-title{font-size:.82rem;font-weight:600;line-height:1.4;color:var(--txt)}
+.news-meta{font-size:.65rem;color:var(--muted);display:flex;gap:8px;align-items:center}
+.news-source{font-weight:700;color:#64748b}
+@media(max-width:640px){.news-grid{grid-template-columns:1fr}}
 
 /* TIEBREAKER HIGHLIGHT */
 .tb-edge{color:#4ade80;font-size:.6rem;font-weight:700}
@@ -206,6 +214,11 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
   .rank-col{display:none}
   .fc-grid{grid-template-columns:1fr}
   .cc-row{grid-template-columns:1fr 1fr}
+  /* Score cards: single column on mobile */
+  .sc-row{grid-template-columns:1fr}
+  .sc-root-lbl{display:none}
+  .sc-card{padding:4px 8px}
+  .sc-nyi{padding:6px 10px!important}
 }
   th,td{padding:4px 4px;font-size:.68rem}
   .t-nm{font-size:.8rem}
@@ -429,6 +442,14 @@ details[open] summary{border-radius:8px 8px 0 0}details summary:hover{background
       </div>
     </details>
 
+  </div>
+</div>
+
+<!-- ── Islanders News Feed ──────────────────────────────────── -->
+<div class="main" style="margin-top:0;padding-top:0">
+  <div class="sec-lbl" style="margin-bottom:8px">🗞️ Islanders News</div>
+  <div id="news-grid" class="news-grid">
+    <div class="ins-loading">Loading news...</div>
   </div>
 </div>
 
@@ -755,6 +776,7 @@ function getPos(team) {
 
 // Tiebreaker comparison
 function tbCompare(t1, t2) {
+  // Full comparison including pts — used for standings sorting
   const s1=ST[t1], s2=ST[t2]; if(!s1||!s2) return 0;
   if(s1.pts!==s2.pts) return s1.pts-s2.pts;
   if(s1.rw!==s2.rw) return s1.rw-s2.rw;
@@ -762,9 +784,13 @@ function tbCompare(t1, t2) {
   return s1.wins-s2.wins;
 }
 function tbEdge(team, rival) {
-  // Returns 'ahead', 'behind', 'tied' based on tiebreakers
-  const c = tbCompare(team, rival);
-  return c>0?'ahead':c<0?'behind':'tied';
+  // Returns 'ahead'/'behind'/'tied' — PURE tiebreaker order (RW→ROW→W), ignoring pts.
+  // Use this whenever you want to know: if pts end up equal, who wins?
+  const s1=ST[team], s2=ST[rival]; if(!s1||!s2) return 'tied';
+  if(s1.rw!==s2.rw) return s1.rw>s2.rw?'ahead':'behind';
+  if(s1.row!==s2.row) return s1.row>s2.row?'ahead':'behind';
+  if(s1.wins!==s2.wins) return s1.wins>s2.wins?'ahead':'behind';
+  return 'tied';
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -973,7 +999,9 @@ function renderRace() {
       const isH2H=RACE_GROUP.has(opp);
       const chipCls=isH2H?'chip chip-h2h':(ha==='H'?'chip chip-h':'chip chip-a');
       const oppCol=TEAM_COLORS[opp]||'#fff';
-      return `<span class="${chipCls}" style="color:${oppCol}">${ha==='H'?'vs':'@'}${opp}</span>`;
+      const [mon,day]=dt.split(' ');
+      const shortDate=`${MONTHS[mon]+1}/${parseInt(day)}`;
+      return `<span class="${chipCls}"><span style="font-size:.72rem;opacity:.55;margin-right:2px">${shortDate}</span><span style="color:${oppCol}">${ha==='H'?'vs':'@'}${opp}</span></span>`;
     }).join('');
 
     rows.push(`<tr class="${rowCls}" data-uid="${uid}" style="cursor:pointer">
@@ -1008,21 +1036,25 @@ function renderRace() {
   const nyiMetRaceGl = ST['NYI'] ? 82-(ST['NYI'].wins+ST['NYI'].losses+ST['NYI'].otl) : 4;
   const raceThreshold = Math.min(nyiMetRaceGl + 2, 4);
 
-  // Metro section: NYI + teams within threshold pts of NYI in either direction
-  // Never include Met #1 (division leader, out of reach)
-  // Met #2 only if their lead over NYI ≤ threshold (actually closeable)
-  // Met #3 (the direct target) always included if within threshold
-  const metRaceTeams = met.filter(t => {
-    if(!t || !ST[t]) return false;
-    if(t === 'NYI') return true; // always include NYI — they're the team chasing
+  // Metro section mirrors WC structure:
+  //   Metro #3 holder (the target/defender) — standalone at top
+  //   Chasing banner
+  //   Everyone else within threshold (chasers or threats)
+  const met3 = met[2] || null; // whoever currently holds Metro #3 — could be NYI
+  const nyiHoldsMet3 = met3 === 'NYI';
+
+  // Always show Metro #3 holder at top
+  if(met3 && ST[met3]) raceRow(met3);
+
+  // Chasing group: teams within threshold of NYI, excluding whoever is at top
+  const metBubble = met.filter(t => {
+    if(!t || !ST[t] || t === met3) return false; // exclude whoever holds #3 (already shown)
+    if(t === 'NYI' && !nyiHoldsMet3) return true; // NYI always in chasing when not holding #3
     const gap = Math.abs(ST[t].pts - nyiPts);
     return gap <= raceThreshold;
-  });
-  metRaceTeams.sort((a,b) => ST[b].pts - ST[a].pts);
-  // Ensure Metro #3 holder is always shown (it's the direct target) even if 1pt outside threshold
-  const met3 = met.find(t => t && t !== 'NYI' && met.indexOf(t) === 2);
-  if(met3 && ST[met3] && !metRaceTeams.includes(met3)) metRaceTeams.unshift(met3);
-  metRaceTeams.filter(Boolean).forEach(raceRow);
+  }).sort((a,b) => ST[b].pts - ST[a].pts);
+
+  if(metBubble.length){ banner('Chasing','ban-bub'); metBubble.forEach(raceRow); }
 
   banner('Wild Card','ban-wc');
   // WC section: only show WC2 holder (the direct target NYI is chasing)
@@ -1483,6 +1515,46 @@ function renderObservations(){
   const pitLead = pit ? pit.pts - nyi.pts : 999;
   const pitIsCloseable = pitLead <= pitMaxCloseableGap;
 
+  // ── Metro-only H2H and scenario math ──────────────────────────
+  // Metro rivals = RACE_GROUP teams that are Metro division teams (not OTT/DET/ATL)
+  const metroRivals = new Set([...RACE_GROUP].filter(t => t !== 'NYI' && ST[t] && TEAM_INFO[t] && TEAM_INFO[t][1]==='MET'));
+  const h2hMetro = nyiRem.filter(g => metroRivals.has(g[1]));
+  const h2hMetroDates = h2hMetro.map(g=>`${g[2]==='H'?'vs':'@'}${g[1]} ${g[0]}`).join(', ');
+
+  // Scenario math: what does NYI need to pass the Metro #3 holder?
+  const phiGl2 = phi ? 82-(phi.wins+phi.losses+phi.otl) : 0;
+  const phiGp2 = phi ? phi.wins+phi.losses+phi.otl : 0;
+  const phiProjAtPace = phi&&phiGl2&&phiGp2 ? phi.pts + Math.round((phi.pts/phiGp2)*phiGl2) : phi?.pts||0;
+
+  // Target: NYI needs to match or beat PHI's projected final total.
+  // If NYI holds RW tiebreaker, matching is enough. If not, need 1 more.
+  const metPtsCutline = phiRW > 0 ? phiProjAtPace : phiProjAtPace + 1;
+  const nyiNeedForMet3 = Math.max(0, metPtsCutline - nyi.pts);
+
+  // Translate pts needed into a minimum W-L-OTL record across nyiGl games
+  // Finds fewest wins (with OTLs making up odd pts) that hits the target
+  function scenarioStr(need, gl) {
+    if(need <= 0) return `already on pace — hold the pace`;
+    if(gl === 0) return `no games left`;
+    if(need > gl * 2) return `cannot reach target even winning all ${gl} — need help`;
+    // Try increasing wins from 0 upward, use 1 OTL if odd pt needed
+    for(let w = 0; w <= gl; w++){
+      const pts = w * 2;
+      if(pts >= need){
+        // w wins alone is enough
+        const losses = gl - w;
+        return `${w}-${losses}-0 or better (W-L-OTL)`;
+      }
+      if(pts + 1 >= need && w + 1 <= gl){
+        // w wins + 1 OTL gets there
+        const losses = gl - w - 1;
+        return `${w}-${losses}-1 or better (W-L-OTL)`;
+      }
+    }
+    return `${Math.ceil(need/2)} wins in ${gl} games`;
+  }
+  const metScenario = scenarioStr(nyiNeedForMet3, nyiGl);
+
   const metObs=[
     {lbl:`🏒 Metro #3 — ${phiTeam||'Target'} in the Seat`,txt:phi&&phiTeam
       ?`${phiTeam} currently holds Metro #3 at <strong>${phi.pts}pts</strong>, ${phiGap>0?`${phiGap}pt${phiGap!==1?'s':''} ahead of NYI (${nyi.pts}pts)`:phiGap===0?`tied with NYI at ${nyi.pts}pts`:`NYI leads by ${Math.abs(phiGap)}pts`}. ${
@@ -1501,12 +1573,12 @@ function renderObservations(){
             : `NYI leads ${phiTeam} — holding Metro #3 on pts right now. Defend it.`
       } ${h2hVsPHI.length?`NYI hosts ${phiTeam} on <strong>${h2hVsPHI[0][0]}</strong> — a critical direct swing game.`:`No more H2H vs ${phiTeam} — results must diverge independently.`}`
       : nyiInMetro3 ? `NYI currently holds Metro #3 at <strong>${nyi.pts}pts</strong>. Hold the spot.` : 'Metro #3 target data unavailable.'},
-    {lbl:'⚔️ H2H Swing Games',txt:h2hTrue.length
-      ?`<strong>${h2hTrue.length} of ${nyiGl} remaining games are direct H2H vs playoff race teams</strong>: ${h2hDates}. Each win adds 2pts AND costs a rival 2pts — a 4-pt swing.`
-      :`No H2H games remaining vs playoff race teams. NYI's fate is decided by running the table and watching rivals.`},
-    // Metro #2 card: only render if the gap is still mathematically closeable
-    ...(pit&&pitTeam&&pitIsCloseable ? [{lbl:`📊 Metro #2 (${pitTeam}) — Gap Narrowing`,txt:`${pitTeam} leads Metro #2 at <strong>${pit.pts}pts</strong> — ${pitLead}pts ahead with ${pitGl} games left. Closeable if NYI wins out and ${pitTeam} stumbles — worth watching.`}] : []),
-    ...(!pitIsCloseable && pit&&pitTeam ? [{lbl:`📊 Metro #2 (${pitTeam}) — Not in Play`,txt:`${pitTeam} has Metro #2 at <strong>${pit.pts}pts</strong> — ${pitLead}pts ahead with ${pitGl} games left. Focus is Metro #3 and WC2.`}] : [])
+    {lbl:'📐 Scenario Math — What NYI Needs',txt:phi&&phiTeam
+      ?`NYI has ${nyi.pts}pts with ${nyiGl} games left. ${phiTeam} projects ~<strong>${phiProjAtPace}pts</strong> at current pace (${phi.pts}pts now, ${phiGl2}GL). NYI needs <strong>${nyiNeedForMet3} more pt${nyiNeedForMet3!==1?'s':''}</strong> to ${phiRW>0?'match':'pass'} that${phiRW>0?' (NYI holds RW tiebreaker — equal final pts is enough)':' (need 1 extra pt to overcome tiebreaker deficit)'}. That means <strong>${metScenario}</strong>.`
+      :'Scenario data unavailable.'},
+    {lbl:'⚔️ Metro H2H Remaining',txt:h2hMetro.length
+      ?`NYI has <strong>${h2hMetro.length} game${h2hMetro.length!==1?'s':''} remaining vs Metro rivals</strong>: ${h2hMetroDates}. Each Metro H2H win adds 2pts AND costs a Metro rival 2pts — a direct 4-pt swing in the division race.`
+      :`No H2H games remaining vs Metro rivals. NYI must run the table while ${phiTeam||'the Metro #3 holder'} loses games independently.`}
   ];
   document.getElementById('metro-obs-cards').innerHTML=metObs.map(o=>
     `<div class="ins-card"><div class="ins-lbl">${o.lbl}</div><p class="ins-txt">${o.txt}</p></div>`
@@ -1671,7 +1743,10 @@ function renderField(){
     const h2h=remaining('NYI').filter(g=>g[1]===t).length;
     let tbNote='';
     if(nyi&&Math.abs(nyi.pts-s.pts)<=2){
-      tbNote=`Tiebreaker: RW ${s.rw}${edge==='ahead'?` <span class="tb-behind">(NYI ${nyi.rw} — NYI leads)</span>`:edge==='behind'?` <span class="tb-edge">(NYI ${nyi.rw} — ${t} leads)</span>`:' (even)'}. `;
+      tbNote=`Tiebreaker: RW ${s.rw}${
+        edge==='ahead'?` <span class="tb-edge">(NYI ${nyi.rw} — NYI leads TB)</span>`:
+        edge==='behind'?` <span class="tb-behind">(NYI ${nyi.rw} — ${t} leads TB)</span>`:
+        ' (even)'}. `;
     }
     let body=`${gap<0?`${Math.abs(gap)}pts <strong>ahead of NYI</strong>`:`${gap}pts behind NYI`}, projects <strong>${proj}pts</strong>. Faces ${rankDesc}. `;
     body+=tbNote;
@@ -1844,7 +1919,7 @@ function _buildCard(away,home,aScore,hScore,state,label,game){
   const cardClass = `sc-card ${isNYI?'sc-nyi':''}`;
   const cardStyle = `border-left:3px solid ${border};flex-direction:column;align-items:flex-start;`;
   const rightBtns = [badgeHtml, goalsToggle, gcLinkHtml].filter(Boolean).join(' ');
-  const topRow = `<div style="display:flex;align-items:center;gap:5px;width:100%">${dotHtml}<span class="sc-matchup">${matchHtml}</span><span style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0">${rightBtns}</span></div>`;
+  const topRow = `<div style="display:flex;align-items:center;gap:5px;width:100%;min-width:0">${dotHtml}<span class="sc-matchup" style="min-width:0;overflow:hidden">${matchHtml}</span><span style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;white-space:nowrap">${rightBtns}</span></div>`;
   return `<div class="${cardClass}" ${dr} style="${cardStyle}">${topRow}${goalsHtml}</div>`;
 }
 
@@ -2117,10 +2192,44 @@ async function fetchMoneyPuck() {
   } catch(e) { /* silent — MP is supplemental */ }
 }
 
+async function fetchNews(){
+  const grid = document.getElementById('news-grid');
+  if(!grid) return;
+  try {
+    const r = await fetch('/.netlify/functions/nhl?type=news');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    const items = (d.items || [])
+      .sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
+    if(!items.length){ grid.innerHTML='<div class="ins-loading">No recent articles found.</div>'; return; }
+    grid.innerHTML = items.map(item => {
+      // Format date: "Mon, 06 Apr 2026 12:00:00 GMT" → "Apr 6"
+      let dateStr = '';
+      try {
+        const dt = new Date(item.pubDate);
+        dateStr = dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      } catch(e) {}
+      const source = item.source || '';
+      return `<div class="news-card">
+        <a href="${item.link}" target="_blank" rel="noopener noreferrer">
+          <div class="news-title">${item.title}</div>
+          <div class="news-meta">
+            ${source?`<span class="news-source">${source}</span>`:''}
+            ${dateStr?`<span>${dateStr}</span>`:''}
+          </div>
+        </a>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    if(grid) grid.innerHTML='<div class="ins-loading">News unavailable.</div>';
+  }
+}
+
 async function loadAll(){
   const ok=await fetchStandings();
   if(!ok) return;
   fetchMoneyPuck(); // async, non-blocking — re-renders clinch when ready
+  fetchNews();      // async, non-blocking — populates news feed
   renderEast();
   renderRace();
   renderClinch();
