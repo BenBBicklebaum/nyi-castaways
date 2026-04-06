@@ -1522,24 +1522,37 @@ function renderObservations(){
   const h2hMetroDates = h2hMetro.map(g=>`${g[2]==='H'?'vs':'@'}${g[1]} ${g[0]}`).join(', ');
 
   // Scenario math: what does NYI need to pass the Metro #3 holder?
-  // phiGap = how many pts NYI trails by (positive = trailing)
-  // phiTeam's remaining games
   const phiGl2 = phi ? 82-(phi.wins+phi.losses+phi.otl) : 0;
-  const phiProjAtPace = phi&&phiGl2 ? phi.pts + Math.round((phi.pts/(phi.wins+phi.losses+phi.otl))*phiGl2) : phi?.pts||0;
-  // NYI needs to finish at least tied with phiTeam (or 1 ahead if they lose TB)
-  const metCutline = phi ? (phiRW > 0 ? phi.pts : phi.pts + 1) : 0; // if NYI holds TB, tie is enough
-  // Scenario strings: what records get NYI there?
+  const phiGp2 = phi ? phi.wins+phi.losses+phi.otl : 0;
+  const phiProjAtPace = phi&&phiGl2&&phiGp2 ? phi.pts + Math.round((phi.pts/phiGp2)*phiGl2) : phi?.pts||0;
+
+  // Target: NYI needs to match or beat PHI's projected final total.
+  // If NYI holds RW tiebreaker, matching is enough. If not, need 1 more.
+  const metPtsCutline = phiRW > 0 ? phiProjAtPace : phiProjAtPace + 1;
+  const nyiNeedForMet3 = Math.max(0, metPtsCutline - nyi.pts);
+
+  // Translate pts needed into a minimum W-L-OTL record across nyiGl games
+  // Finds fewest wins (with OTLs making up odd pts) that hits the target
   function scenarioStr(need, gl) {
-    if(need <= 0) return `already on track — hold the pace`;
+    if(need <= 0) return `already on pace — hold the pace`;
     if(gl === 0) return `no games left`;
-    // Winning all = 2pts/game
-    const minWins = Math.ceil(need/2);
-    if(minWins > gl) return `needs wins in all ${gl} remaining games plus help`;
-    const otlBuffer = (gl * 2) - need; // pts available above minimum
-    if(otlBuffer >= 2) return `${minWins}-${gl-minWins}-0 or better gets there`;
-    return `${minWins} wins in ${gl} games needed`;
+    if(need > gl * 2) return `cannot reach target even winning all ${gl} — need help`;
+    // Try increasing wins from 0 upward, use 1 OTL if odd pt needed
+    for(let w = 0; w <= gl; w++){
+      const pts = w * 2;
+      if(pts >= need){
+        // w wins alone is enough
+        const losses = gl - w;
+        return `${w}-${losses}-0 or better (W-L-OTL)`;
+      }
+      if(pts + 1 >= need && w + 1 <= gl){
+        // w wins + 1 OTL gets there
+        const losses = gl - w - 1;
+        return `${w}-${losses}-1 or better (W-L-OTL)`;
+      }
+    }
+    return `${Math.ceil(need/2)} wins in ${gl} games`;
   }
-  const nyiNeedForMet3 = phi ? Math.max(0, metCutline - nyi.pts) : 0;
   const metScenario = scenarioStr(nyiNeedForMet3, nyiGl);
 
   const metObs=[
@@ -1561,7 +1574,7 @@ function renderObservations(){
       } ${h2hVsPHI.length?`NYI hosts ${phiTeam} on <strong>${h2hVsPHI[0][0]}</strong> — a critical direct swing game.`:`No more H2H vs ${phiTeam} — results must diverge independently.`}`
       : nyiInMetro3 ? `NYI currently holds Metro #3 at <strong>${nyi.pts}pts</strong>. Hold the spot.` : 'Metro #3 target data unavailable.'},
     {lbl:'📐 Scenario Math — What NYI Needs',txt:phi&&phiTeam
-      ?`NYI has ${nyi.pts}pts with ${nyiGl} games left. ${phiTeam} has ${phi.pts}pts with ${phiGl2} games left. NYI needs <strong>${nyiNeedForMet3} more pt${nyiNeedForMet3!==1?'s':''}</strong> to ${phiRW>0?'match':'pass'} ${phiTeam}${phiRW>0?' (NYI holds RW tiebreaker — equal pts is enough)':' (need 1 extra pt due to tiebreaker deficit)'}. That means <strong>${metScenario}</strong>. ${phiTeam} projects ~${phiProjAtPace}pts at current pace.`
+      ?`NYI has ${nyi.pts}pts with ${nyiGl} games left. ${phiTeam} projects ~<strong>${phiProjAtPace}pts</strong> at current pace (${phi.pts}pts now, ${phiGl2}GL). NYI needs <strong>${nyiNeedForMet3} more pt${nyiNeedForMet3!==1?'s':''}</strong> to ${phiRW>0?'match':'pass'} that${phiRW>0?' (NYI holds RW tiebreaker — equal final pts is enough)':' (need 1 extra pt to overcome tiebreaker deficit)'}. That means <strong>${metScenario}</strong>.`
       :'Scenario data unavailable.'},
     {lbl:'⚔️ Metro H2H Remaining',txt:h2hMetro.length
       ?`NYI has <strong>${h2hMetro.length} game${h2hMetro.length!==1?'s':''} remaining vs Metro rivals</strong>: ${h2hMetroDates}. Each Metro H2H win adds 2pts AND costs a Metro rival 2pts — a direct 4-pt swing in the division race.`
@@ -2186,7 +2199,8 @@ async function fetchNews(){
     const r = await fetch('/.netlify/functions/nhl?type=news');
     if(!r.ok) throw new Error('HTTP '+r.status);
     const d = await r.json();
-    const items = d.items || [];
+    const items = (d.items || [])
+      .sort((a,b) => new Date(b.pubDate) - new Date(a.pubDate));
     if(!items.length){ grid.innerHTML='<div class="ins-loading">No recent articles found.</div>'; return; }
     grid.innerHTML = items.map(item => {
       // Format date: "Mon, 06 Apr 2026 12:00:00 GMT" → "Apr 6"
