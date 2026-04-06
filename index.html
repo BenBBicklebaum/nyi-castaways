@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NYI Castaways Playoff Push 2026</title>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-W2JLY4BXGR"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-W2JLY4BXGR');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1759,30 +1767,22 @@ function _buildCard(away,home,aScore,hScore,state,label,game){
   const homeTmCol=TEAM_COLORS[home]||'#cbd5e1';
 
   // ── Score colors ────────────────────────────────────────────────
-  // Rules:
-  //   - Team name abbrev: always that team's color (set above)
-  //   - Score when tied: white (#e2e8f0) for both
-  //   - Score when not tied:
-  //       winning team we ROOT FOR  → green
-  //       winning team we root AGAINST → red
-  //       losing team we root FOR   → red
-  //       losing team we root against → muted white (#e2e8f0)
-  //   - NYI game: treat NYI as the always-root-for team
-  //   - Pre-game: no scores shown, colors irrelevant
+  // Both scores same color based on how the team we're rooting for is doing:
+  //   Tied (or pre-game)      → both white
+  //   Root team winning       → both green
+  //   Root team losing        → both red
+  //   No rooting interest     → both white
+  //   NYI game: NYI is always the root team
   let awayScoreCol='#e2e8f0', homeScoreCol='#e2e8f0';
-  if(!isPre && (wa||wh)){ // only color scores when not tied
-    const rootFor = isNYI ? (away==='NYI'?away:home) : root; // who we want to win
-    if(rootFor){
-      const rootAgainst = rootFor===away ? home : away;
-      // Winning side
-      const winnerIsFor  = (wa && rootFor===away) || (wh && rootFor===home);
-      // Apply to away score
-      if(wa)       awayScoreCol = winnerIsFor  ? '#4ade80' : '#f87171'; // away winning
-      else         awayScoreCol = rootFor===away ? '#f87171' : '#e2e8f0'; // away losing
-      // Apply to home score
-      if(wh)       homeScoreCol = winnerIsFor  ? '#4ade80' : '#f87171'; // home winning
-      else         homeScoreCol = rootFor===home ? '#f87171' : '#e2e8f0'; // home losing
+  if(!isPre){
+    const rootFor = isNYI ? (away==='NYI' ? away : home) : root;
+    if(rootFor && (wa||wh)){
+      const rootWinning = (rootFor===away && wa) || (rootFor===home && wh);
+      const scoreCol = rootWinning ? '#4ade80' : '#f87171';
+      awayScoreCol = scoreCol;
+      homeScoreCol = scoreCol;
     }
+    // tied → stays white (default)
   }
 
   if(isPre){
