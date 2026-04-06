@@ -982,12 +982,22 @@ function renderRace() {
   }
 
   banner('Metropolitan Division Push — Chasing Metro #3','ban-met');
-  // Show Metro #3 (PHI, the target) and Metro #2 (PIT, locked in) for context
-  [met[2],met[1]].filter(Boolean).forEach(raceRow);
+  // Metro: show teams within threshold of NYI (same logic as RACE_GROUP)
+  const nyiMetRaceGl = ST['NYI'] ? 82-(ST['NYI'].wins+ST['NYI'].losses+ST['NYI'].otl) : 4;
+  const raceThreshold = Math.min(nyiMetRaceGl + 2, 4);
+  const metRaceTeams = met.filter(t => t && t!=='NYI' && ST[t] && Math.abs(ST[t].pts - (ST['NYI']?.pts||0)) <= raceThreshold);
+  // Always include Metro #2 and #3 holder for context even if slightly outside threshold
+  [met[2],met[1]].filter(Boolean).forEach(t => { if(!metRaceTeams.includes(t)) metRaceTeams.push(t); });
+  metRaceTeams.filter(Boolean).forEach(raceRow);
 
   banner('Wild Card','ban-wc');
   wcp.slice(0,2).forEach(raceRow);
-  const bubble=wcp.slice(2).filter(t=>ST[wcp[1]]&&ST[wcp[1]].pts-ST[t].pts<=6);
+  const wc2Pts2 = ST[wcp[1]] ? ST[wcp[1]].pts : 0;
+  const bubble = wcp.slice(2).filter(t => {
+    if(!ST[t]) return false;
+    const gl = 82-(ST[t].wins+ST[t].losses+ST[t].otl);
+    return wc2Pts2 - ST[t].pts <= raceThreshold && ST[t].pts + gl*2 >= wc2Pts2;
+  });
   if(bubble.length){banner('Bubble','ban-bub');bubble.forEach(raceRow);}
 
   tbody.innerHTML=rows.join('');
@@ -1383,7 +1393,6 @@ function renderObservations(){
   const met=sortedDiv('MET'), wcp=wcPool();
   const metRank=met.indexOf('NYI')+1;
   const nyiRem=remaining('NYI');
-  const h2h=nyiRem.filter(g=>RACE_GROUP.has(g[1]));
 
   const adjNote=haircuts.length?` (adj for ${haircuts.join(',')} likely resting)`:'';
 
