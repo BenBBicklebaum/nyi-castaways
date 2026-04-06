@@ -444,29 +444,44 @@ const RACE_GROUP_SEED = new Set(["CBJ","DET","NYI","OTT","PHI","PIT","WSH","BOS"
 let RACE_GROUP = new Set(["CBJ","DET","NYI","OTT","PHI","PIT","WSH"]); // default until standings load
 
 function rebuildRaceGroup(){
-  // After standings load: keep Eastern teams within mathematical reach of a playoff spot
-  // A team is eliminated if their max possible pts < the current WC2 cutline
+  // Build the playoff race group: teams NYI is actually competing with or against.
+  // Threshold = nyiGl + 2, capped at 4.
+  // e.g. 4 GL → 4pts | 3 GL → 4pts | 2 GL → 4pts | 1 GL → 3pts | 0 GL → 2pts
   const wcp = wcPool();
-  const wc2Holder = wcp[1] && wcp[1]!=='NYI' ? wcp[1] : wcp[2];
-  if(!wc2Holder || !ST[wc2Holder]) return; // standings not ready
+  const met = sortedDiv('MET');
+  if(!ST['NYI']) return;
 
-  const wc2Pts = ST[wc2Holder].pts;
-  const newGroup = new Set(['NYI']); // NYI always in
+  const nyi = ST['NYI'];
+  const nyiGl = 82 - (nyi.wins + nyi.losses + nyi.otl);
+  const threshold = Math.min(nyiGl + 2, 4);
 
-  // Include any Eastern team that can still reach the current WC2 pts total
-  Object.entries(ST).forEach(([abbrev, s]) => {
-    if(s.conf !== 'E') return; // Eastern only
-    const gl = 82 - (s.wins + s.losses + s.otl);
-    const maxPts = s.pts + gl * 2;
-    // In the race if: within 8pts of WC2 holder currently OR max pts >= WC2 holder's current pts
-    if(maxPts >= wc2Pts || wc2Pts - s.pts <= 8){
-      newGroup.add(abbrev);
-    }
+  const newGroup = new Set(['NYI']);
+
+  // ── WC race ──────────────────────────────────────────────────
+  // Include WC1/WC2 holders + any bubble team within threshold pts of WC2
+  // AND still mathematically alive (maxPts >= WC2 pts)
+  const wc2Holder = wcp.find(t => t && t !== 'NYI') || null;
+  const wc2Pts = wc2Holder && ST[wc2Holder] ? ST[wc2Holder].pts : 999;
+  wcp.forEach(t => {
+    if(!t || !ST[t]) return;
+    const gl = 82 - (ST[t].wins + ST[t].losses + ST[t].otl);
+    const maxPts = ST[t].pts + gl * 2;
+    const gap = wc2Pts - ST[t].pts;
+    if(gap <= threshold && maxPts >= wc2Pts) newGroup.add(t);
   });
 
-  // Always include teams holding playoff spots — they're always relevant
-  wcPool().slice(0,2).forEach(t => { if(t) newGroup.add(t); });
-  sortedDiv('MET').slice(0,3).forEach(t => { if(t) newGroup.add(t); });
+  // ── Metro race ───────────────────────────────────────────────
+  // Include any Metro team within threshold pts of NYI (above or below)
+  // AND still mathematically relevant (they can still reach NYI, or NYI can still reach them)
+  met.forEach(t => {
+    if(!t || !ST[t] || t === 'NYI') return;
+    const gl = 82 - (ST[t].wins + ST[t].losses + ST[t].otl);
+    const maxPts = ST[t].pts + gl * 2;
+    const gap = Math.abs(ST[t].pts - nyi.pts);
+    const nyiCanCatch = nyi.pts + nyiGl * 2 >= ST[t].pts;
+    const theyCanCatch = maxPts >= nyi.pts;
+    if(gap <= threshold && (nyiCanCatch || theyCanCatch)) newGroup.add(t);
+  });
 
   RACE_GROUP = newGroup;
 }
@@ -1402,11 +1417,11 @@ function renderObservations(){
   const h2hVsPIT = nyiRem.filter(g=>g[1]===pitTeam);
   const h2hVsPHI = nyiRem.filter(g=>g[1]===phiTeam);
 
-  // ── H2H: only count games vs teams still in the playoff race ──────
-  // RACE_GROUP may include division leaders (CAR, PIT) and non-threats
-  // Real rivals = teams within mathematical reach of a playoff spot
-  const trueRivals = new Set([...wcp.slice(0,4), ...met.slice(0,4)].filter(t=>t&&t!=='NYI'&&ST[t]));
-  const h2hTrue = nyiRem.filter(g=>trueRivals.has(g[1]));
+  // ── H2H: only count games vs teams NYI is directly racing against ─
+  // True rivals = teams in RACE_GROUP that aren't NYI and aren't already
+  // safely locked into Metro top-2 (those spots are out of reach)
+  const trueRivals = new Set([...RACE_GROUP].filter(t => t && t !== 'NYI' && ST[t]));
+  const h2hTrue = nyiRem.filter(g => trueRivals.has(g[1]));
   const h2hDates = h2hTrue.map(g=>`${g[2]==='H'?'vs':'@'}${g[1]} ${g[0]}`).join(', ');
 
   // NYI's current Metro position
@@ -1480,15 +1495,9 @@ function renderObservations(){
     }
   }
 
-  // Rival-vs-rival: only true bubble teams (in RACE_GROUP, within reach of WC2, not NYI or WC holders)
-  const bubbleAll = [...RACE_GROUP].filter(t => {
-    if(t==='NYI'||t===wc2Rival||t===wc1Rival) return false;
-    if(!ST[t]) return false;
-    const gl = 82-(ST[t].wins+ST[t].losses+ST[t].otl);
-    const maxPts = ST[t].pts + gl*2;
-    // Only include if they can still reach the WC2 holder's current pts
-    return ott ? maxPts >= ott.pts : true;
-  });
+  // Rival-vs-rival: games between two RACE_GROUP teams (both true bubble competitors)
+  // RACE_GROUP is now scoped to actual race teams so no need for extra filtering
+  const bubbleAll = [...RACE_GROUP].filter(t => t !== 'NYI' && t !== wc2Rival && t !== wc1Rival && ST[t]);
   // Also derive WC1 holder for exclusion — already declared above
   const rvrGames=[];
   const seen=new Set();
