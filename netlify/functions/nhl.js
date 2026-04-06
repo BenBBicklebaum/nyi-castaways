@@ -76,5 +76,37 @@ exports.handler = async (event) => {
     }
   }
 
+  // ── MoneyPuck simulation odds for NYI ─────────────────────────
+  if (type === 'moneypuck') {
+    try {
+      const r = await fetchUrl('https://moneypuck.com/moneypuck/simulations/simulations_recent.csv');
+      if (r.status !== 200) throw new Error('HTTP ' + r.status);
+      // Parse CSV — find the ALL,NYI row
+      const lines = r.body.split('\n');
+      const header = lines[0].split(',');
+      let nyiRow = null;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',');
+        if (cols[0] === 'ALL' && cols[1] === 'NYI') { nyiRow = cols; break; }
+      }
+      if (!nyiRow) throw new Error('NYI row not found');
+      const get = (col) => {
+        const idx = header.indexOf(col);
+        return idx >= 0 ? parseFloat(nyiRow[idx]) : null;
+      };
+      const result = {
+        madePlayoffs:      get('madePlayoffs'),
+        wildcard1:         get('wildcard1Odds'),
+        wildcard2:         get('wildcard2Odds'),
+        divisionPlace2:    get('divisionPlace2Odds'),
+        divisionPlace3:    get('divisionPlace3Odds'),
+        fetchedAt:         new Date().toISOString()
+      };
+      return { statusCode: 200, headers: CORS, body: JSON.stringify(result) };
+    } catch(e) {
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    }
+  }
+
   return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'Unknown type: ' + type }) };
 };

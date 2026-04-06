@@ -49,9 +49,6 @@ function postJson(url, payload, headers = {}) {
   });
 }
 
-// ── Constants ─────────────────────────────────────────────────────
-const RACE_GROUP = new Set(['BOS','CBJ','DET','NYI','OTT','PHI','PIT']);
-
 // ── Main handler ──────────────────────────────────────────────────
 
 exports.handler = async (event, context) => {
@@ -104,9 +101,14 @@ exports.handler = async (event, context) => {
     const currentSnapshot = {};
     const finishedGames = [];
 
+    // Broad Eastern teams — we don't have dynamic RACE_GROUP yet at this stage,
+    // so include all plausible East playoff contenders. Pruning happens in prompt context.
+    const EAST_CONTENDERS = new Set([
+      'NYI','OTT','BOS','PHI','PIT','CBJ','DET','WSH','NJD','TBL','BUF','MTL','TOR','FLA','CAR','NYR'
+    ]);
     (scData.games || []).forEach(g => {
       const away = g.awayTeam?.abbrev, home = g.homeTeam?.abbrev;
-      if (!RACE_GROUP.has(away) && !RACE_GROUP.has(home)) return;
+      if (!EAST_CONTENDERS.has(away) && !EAST_CONTENDERS.has(home)) return;
       const gameId = String(g.id);
       const state = g.gameState;
       currentSnapshot[gameId] = {
@@ -170,23 +172,86 @@ exports.handler = async (event, context) => {
     const stData = JSON.parse(stRes.body);
 
     const ST = {};
+    // Load all Eastern teams + relevant Western context
     (stData.standings || []).forEach(row => {
       const abbrev = (row.teamAbbrev && typeof row.teamAbbrev === 'object')
         ? row.teamAbbrev.default : row.teamAbbrev;
-      if (!abbrev || !RACE_GROUP.has(abbrev)) return;
+      if (!abbrev) return;
+      const conf = (row.conferenceAbbrev||'').startsWith('E') ? 'E' : 'W';
+      const divMap = {'A':'ATL','M':'MET','C':'CEN','P':'PAC'};
+      const div = divMap[row.divisionAbbrev]||row.divisionAbbrev||'';
       ST[abbrev] = {
         pts: row.points||0, gp: row.gamesPlayed||0,
         wins: row.wins||0, losses: row.losses||0, otl: row.otLosses||0,
         rw: row.regulationWins||0, row: row.regulationPlusOtWins||0,
         diff: row.goalDifferential||0,
         l10w: row.l10Wins||0, l10l: row.l10Losses||0, l10otl: row.l10OtLosses||0,
-        streak: row.streakCode||''
+        streak: row.streakCode||'',
+        conf, div
       };
     });
 
-    if (!ST['NYI']) throw new Error('NYI not in standings');
+    // 8. Build race group dynamically from standings
+    // Derive who holds each relevant spot
+    const eastTeams = (stData.standings || []).filter(row => {
+      const conf = row.conferenceAbbrev || '';
+      return conf.startsWith('E');
+    }).map(row => {
+      const abbrev = (row.teamAbbrev && typeof row.teamAbbrev === 'object')
+        ? row.teamAbbrev.default : row.teamAbbrev;
+      return abbrev;
+    }).filter(Boolean);
 
-    // 8. Build rich prompt context
+    // Sort Eastern teams by pts (already done via ST)
+    const eastSorted = Object.entries(ST)
+      .filter(([,s]) => s.conf === 'E')
+      .sort((a,b) => b[1].pts - a[1].pts);
+
+    // Wild card pool: all Eastern non-division-leader teams sorted by pts
+    const metroTeams = (stData.standings || [])
+      .filter(r => r.divisionAbbrev === 'M')
+      .map(r => (r.teamAbbrev && typeof r.teamAbbrev === 'object') ? r.teamAbbrev.default : r.teamAbbrev)
+      .filter(Boolean);
+    const atlTeams = (stData.standings || [])
+      .filter(r => r.divisionAbbrev === 'A')
+      .map(r => (r.teamAbbrev && typeof r.teamAbbrev === 'object') ? r.teamAbbrev.default : r.teamAbbrev)
+      .filter(Boolean);
+
+    // Sort each division by pts
+    const sortDiv = (teams) => teams
+      .filter(t => ST[t])
+      .sort((a,b) => ST[b].pts - ST[a].pts);
+    const metSorted = sortDiv(metroTeams);
+    const atlSorted = sortDiv(atlTeams);
+
+    // WC pool: teams not in top-3 of their division, sorted by pts
+    const metTop3 = new Set(metSorted.slice(0,3));
+    const atlTop3 = new Set(atlSorted.slice(0,3));
+    const wcPool = [...eastSorted.map(([t]) => t)]
+      .filter(t => !metTop3.has(t) && !atlTop3.has(t))
+      .slice(0, 4); // WC1, WC2, and next 2
+
+    const wc1Holder = wcPool[0] && wcPool[0] !== 'NYI' ? wcPool[0] : wcPool[1];
+    const wc2Holder = wcPool[1] && wcPool[1] !== 'NYI' ? wcPool[1] : wcPool[2];
+    const metTop3List = metSorted.slice(0,3);
+    const met3Holder = metTop3List.find(t => t !== 'NYI' && metTop3List.indexOf(t) === 2)
+                    || metTop3List.filter(t => t !== 'NYI')[1]
+                    || null;
+    const met2Holder = metTop3List.find(t => t !== 'NYI' && metTop3List.indexOf(t) === 1)
+                    || metTop3List.filter(t => t !== 'NYI')[0]
+                    || null;
+
+    // Bubble: teams within 8 pts of WC2 (can still make it)
+    const wc2Pts = wc2Holder && ST[wc2Holder] ? ST[wc2Holder].pts : 0;
+    const dynamicRaceGroup = new Set(['NYI']);
+    eastSorted.forEach(([t, s]) => {
+      const gl = 82 - (s.wins + s.losses + s.otl);
+      if (s.pts + gl * 2 >= wc2Pts || wc2Pts - s.pts <= 8) dynamicRaceGroup.add(t);
+    });
+    // Always include current playoff teams
+    [...metTop3, ...atlTop3, wc1Holder, wc2Holder].forEach(t => { if(t) dynamicRaceGroup.add(t); });
+
+    // 9. Build rich prompt context
     const nyi = ST['NYI'];
     const sorted = Object.entries(ST).sort((a,b) => b[1].pts - a[1].pts);
 
@@ -216,120 +281,156 @@ exports.handler = async (event, context) => {
       ? `\nToday's completed push group games:\n${finishedGames.join('\n')}`
       : '\nNo push group games today.';
 
-    // MTL/BOS context
-    const mtlST = ST['MTL'], bosST = ST['BOS'];
-    let mtlContext = '';
-    if(mtlST && bosST && ST['NYI']) {
-      const bosGl = 82-(bosST.wins+bosST.losses+bosST.otl);
-      const bosMax = bosST.pts + bosGl*2;
-      const atlSorted = ['BUF','TBL','MTL','BOS','OTT','DET','TOR','FLA']
-        .filter(t=>ST[t]).sort((a,b)=>ST[b].pts-ST[a].pts);
-      const mtlInWC = atlSorted.indexOf('MTL') >= 3;
-      const mtlGap = mtlST.pts - ST['NYI'].pts;
-      const metSorted = ['CAR','NYI','PIT','CBJ','PHI','WSH','NJD','NYR']
-        .filter(t=>ST[t]).sort((a,b)=>ST[b].pts-ST[a].pts);
-      const nyiMetRank = metSorted.indexOf('NYI')+1;
-      if(mtlInWC) {
-        mtlContext = `\nMTL ALERT: MTL has dropped out of ATL top-3 and is now in WC (${mtlST.pts}pts, ${Math.abs(mtlGap)}pts ${mtlGap>0?'ahead of':'behind'} NYI). Direct WC competitor. Root AGAINST MTL.`;
-      } else if(bosMax >= mtlST.pts) {
-        mtlContext = `\nMTL WATCH: MTL is ATL#3 (${mtlST.pts}pts, ${mtlGap}pts ahead of NYI). BOS (${bosST.pts}pts, ${bosGl}GL, max=${bosMax}) can still catch them. If BOS passes MTL, Montreal enters WC ${mtlGap}pts ahead of NYI. NYI plays MTL Apr 12 (H2H at home). Current rooting verdict: ${nyiMetRank<=2?'Root FOR MTL (keep in ATL = out of WC) — means root AGAINST BOS in BOS-MTL games. This flips if NYI drops to MET#3 or WC.':'Root AGAINST MTL — they are a direct WC threat.'}`;
-      }
-    }
-
     const gamesLeft = 82 - nyi.gp;
     const today = new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'});
 
-    // NYI remaining schedule (hardcoded, filter out played games using GP count)
-    // Full season schedule from baked-in data — filter to only future games
-    const NYI_FULL_SCHED = [
-      ['Mar 30','PIT','H'],['Mar 31','BUF','A'],['Apr 3','PHI','H'],
-      ['Apr 4','CAR','A'],['Apr 9','TOR','H'],['Apr 11','OTT','H'],
-      ['Apr 12','MTL','H'],['Apr 14','CAR','H']
-    ];
-    const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5};
-    const todayET = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
-    const todayOnly = new Date(todayET.getFullYear(), todayET.getMonth(), todayET.getDate());
-    const nyiRemaining = NYI_FULL_SCHED.filter(g => {
-      const p = g[0].split(' ');
-      const gd = new Date(2026, MONTHS[p[0]], parseInt(p[1]));
-      return gd >= todayOnly;
-    });
-    const RACE_TEAMS = new Set(['BOS','CBJ','DET','MTL','NYI','OTT','PHI','PIT']);
-    const nyiH2H = nyiRemaining.filter(g => RACE_TEAMS.has(g[1]));
-    const nyiSchedStr = nyiRemaining.map(g => `${g[0]}: ${g[2]==='H'?'vs':'@'}${g[1]}${RACE_TEAMS.has(g[1])?' [RIVAL]':''}`).join(', ');
+    // 10. Fetch NYI schedule from NHL API (remaining games only)
+    let nyiSchedStr = 'Schedule unavailable';
+    let nyiH2H = [];
+    let bubbleSchedStr = 'Rival schedules unavailable';
+    try {
+      const schedRes = await fetchUrl('https://api-web.nhle.com/v1/club-schedule-season/NYI/now');
+      if (schedRes.status === 200) {
+        const schedData = JSON.parse(schedRes.body);
+        const todayET = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+        const todayStr = todayET.toISOString().slice(0,10);
+        const nyiGames = (schedData.games || []).filter(g => {
+          const state = g.gameState || '';
+          return g.gameDate >= todayStr && state !== 'OFF' && state !== 'FINAL';
+        }).slice(0, nyi ? 82 - nyi.gp : 10);
 
-    // Bubble team remaining schedules for WC analysis
-    const BUBBLE_SCHEDS = {
-      OTT: [['Mar 29','BOS','H'],['Apr 1','BUF','H'],['Apr 3','WSH','A'],['Apr 5','BOS','A'],['Apr 7','CBJ','H'],['Apr 9','DET','A'],['Apr 11','NYI','A'],['Apr 14','TBL','A']],
-      DET: [['Mar 29','NJD','H'],['Apr 1','CBJ','A'],['Apr 2','PHI','H'],['Apr 4','WSH','H'],['Apr 7','CBJ','H'],['Apr 9','OTT','H'],['Apr 11','BUF','A'],['Apr 14','TOR','H']],
-      PHI: [['Mar 30','TOR','A'],['Apr 2','DET','A'],['Apr 3','NYI','A'],['Apr 5','BOS','H'],['Apr 7','NJD','H'],['Apr 10','WSH','H'],['Apr 12','CBJ','A'],['Apr 14','MTL','H']]
-    };
-    const bubbleSchedStr = Object.entries(BUBBLE_SCHEDS).map(([t, sched]) => {
-      const tGp = ST[t] ? ST[t].wins+ST[t].losses+ST[t].otl : 0;
-      const tGl = 82-tGp;
-      const rem = sched.filter(g => {
-        const p = g[0].split(' ');
-        const gd = new Date(2026, MONTHS[p[0]], parseInt(p[1]));
-        return gd >= todayOnly;
-      }).slice(0, tGl);
-      return `${t} remaining: ${rem.map(g=>`${g[0]} ${g[2]==='H'?'vs':'@'}${g[1]}`).join(', ')}`;
-    }).join('\n');
+        nyiH2H = nyiGames.filter(g => {
+          const opp = g.awayTeam?.abbrev === 'NYI' ? g.homeTeam?.abbrev : g.awayTeam?.abbrev;
+          return dynamicRaceGroup.has(opp);
+        });
+
+        nyiSchedStr = nyiGames.map(g => {
+          const opp = g.awayTeam?.abbrev === 'NYI' ? g.homeTeam?.abbrev : g.awayTeam?.abbrev;
+          const ha = g.homeTeam?.abbrev === 'NYI' ? 'vs' : '@';
+          const dateStr = new Date(g.gameDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+          const rival = dynamicRaceGroup.has(opp) ? ' [RIVAL]' : '';
+          return `${dateStr}: ${ha}${opp}${rival}`;
+        }).join(', ') || 'No remaining games';
+      }
+    } catch(e) {
+      console.warn('NYI schedule fetch failed:', e.message);
+    }
+
+    // 11. Fetch rival schedules from NHL API dynamically
+    const rivals = [...dynamicRaceGroup].filter(t => t !== 'NYI' && ST[t]);
+    const bubbleScheds = {};
+    await Promise.all(rivals.slice(0, 6).map(async team => {
+      try {
+        const r = await fetchUrl(`https://api-web.nhle.com/v1/club-schedule-season/${team}/now`);
+        if (r.status !== 200) return;
+        const d = JSON.parse(r.body);
+        const todayET = new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+        const todayStr = todayET.toISOString().slice(0,10);
+        const remaining = (d.games || []).filter(g => {
+          const state = g.gameState || '';
+          return g.gameDate >= todayStr && state !== 'OFF' && state !== 'FINAL';
+        });
+        bubbleScheds[team] = remaining.map(g => {
+          const opp = g.awayTeam?.abbrev === team ? g.homeTeam?.abbrev : g.awayTeam?.abbrev;
+          const ha = g.homeTeam?.abbrev === team ? 'vs' : '@';
+          const dateStr = new Date(g.gameDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+          return `${dateStr} ${ha}${opp}`;
+        }).join(', ') || 'done';
+      } catch(e) { bubbleScheds[team] = 'unavailable'; }
+    }));
+
+    bubbleSchedStr = Object.entries(bubbleScheds)
+      .map(([t, sched]) => {
+        const s = ST[t];
+        const gl = s ? 82-(s.wins+s.losses+s.otl) : 0;
+        return `${t} (${s?s.pts:0}pts, ${gl}GL): ${sched}`;
+      }).join('\n');
+
     const nyiProj = nyi.gp ? Math.round(nyi.pts + (nyi.pts/nyi.gp)*gamesLeft) : nyi.pts;
 
-    const prompt = `You are AI Butchie Bot — a sharp NHL analyst. Return ONLY a JSON object, nothing else.
+    // Key tiebreaker facts for prompt — using dynamic holders
+    const phi = met3Holder ? ST[met3Holder] : null;
+    const ott = wc2Holder ? ST[wc2Holder] : null;
+    const det = ST['DET'], cbj = ST['CBJ'], wsh = ST['WSH'];
+    const phiGap = phi ? phi.pts - nyi.pts : 0;
+    const ottGap = ott ? ott.pts - nyi.pts : 0;
 
-STANDINGS DATA:
+    // Derive bubble chasers (non-NYI, outside playoff line, within 6 pts of WC2)
+    const bubbleChasers = [...dynamicRaceGroup]
+      .filter(t => t !== 'NYI' && ST[t] && !metTop3.has(t) && !atlTop3.has(t) && t !== wc1Holder && t !== wc2Holder)
+      .sort((a,b) => ST[b].pts - ST[a].pts)
+      .slice(0,3);
+    const bubbleChasersStr = bubbleChasers.map(t => `${t} (${ST[t].pts}pts)`).join(', ');
+
+    // WC1 context
+    const wc1 = wc1Holder ? ST[wc1Holder] : null;
+    const wc1Gap = wc1 ? wc1.pts - nyi.pts : 0;
+
+    // NYI's current position label
+    const nyiInMet = metSorted.indexOf('NYI');
+    const nyiInWC = wcPool.indexOf('NYI');
+    const nyiPosLabel = nyiInMet >= 0 && nyiInMet < 3
+      ? `Metro #${nyiInMet+1}`
+      : nyiInWC >= 0 && nyiInWC < 2
+        ? `WC${nyiInWC+1}`
+        : 'OUT of a playoff spot';
+
+    const prompt = `You are AI Butchie Bot — a sharp NHL analyst for New York Islanders fans. Return ONLY a JSON object, nothing else.
+
+CURRENT RACE CONTEXT:
+NYI (${nyi.pts}pts, ${nyi.wins}-${nyi.losses}-${nyi.otl}, ${gamesLeft}GL) | RW:${nyi.rw} ROW:${nyi.row}
+NYI is currently ${nyiPosLabel}. ${met3Holder ? `They need to pass ${met3Holder} for Metro #3` : ''}${met3Holder && wc2Holder ? ' AND/OR ' : ''}${wc2Holder && wc2Holder !== met3Holder ? `pass ${wc2Holder} for WC2` : ''}.
+
+STANDINGS DATA (race group):
 ${standingsStr}
 
-TIEBREAKER SITUATIONS (teams within 5pts of NYI):
+TIEBREAKER SITUATIONS (teams within 3pts of NYI):
 ${tbLines.length ? tbLines.join('\n') : 'None'}
-${recentStr}${mtlContext}
+${recentStr}
 
-NYI has ${gamesLeft} games left. Season ends April 16, 2026. Today is ${today}.
-BOS leads WC1 by ${(ST['BOS']?ST['BOS'].pts-nyi.pts:0)} points. Only discuss reclaiming WC1 if that gap is 4 or fewer.
+Season ends April 16, 2026. Today is ${today}. NYI has ${gamesLeft} games left.
+${wc1Holder ? `${wc1Holder} holds WC1 at ${wc1?wc1.pts:0}pts — ${wc1Gap}pts ahead of NYI. WC1 is ${wc1Gap > 4 ? 'NOT in reach' : 'potentially reachable'}.` : ''}
 
-DIVISION STRUCTURE (critical — do not mix these up):
-- METROPOLITAN DIVISION teams: CAR, NYI, PIT, CBJ, PHI, WSH, NJD, NYR
-- ATLANTIC DIVISION teams: BUF, TBL, MTL, BOS, OTT, DET, TOR, FLA
-- OTT and DET are ATLANTIC teams competing for WILD CARD spots — they are NOT Metro rivals
-- PHI is BOTH a Metro team AND a WC bubble team
-- Metro #3 race is NYI vs PIT (and potentially CBJ/PHI below)
-- Wild Card race is NYI vs OTT, DET, PHI (from outside Metro top 3)
+DIVISION STRUCTURE (critical — never mix these up):
+- METROPOLITAN DIVISION: CAR, NYI, PIT, CBJ, PHI, WSH, NJD, NYR
+- ATLANTIC DIVISION: BUF, TBL, MTL, BOS, OTT, DET, TOR, FLA
+- Atlantic WC teams (${wc2Holder||'?'}, ${wc1Holder||'?'}) are NOT Metro rivals
+${met3Holder ? `- ${met3Holder} holds Metro #3 (${phi?phi.pts:0}pts) — NYI's Metro target` : '- NYI may already hold Metro #3'}
+${wc2Holder ? `- ${wc2Holder} holds WC2 (${ott?ott.pts:0}pts) — NYI's Wild Card target` : ''}
+${bubbleChasers.length ? `- ${bubbleChasersStr} are chasing from below` : ''}
 
 NYI REMAINING SCHEDULE (${gamesLeft} games): ${nyiSchedStr}
-NYI H2H GAMES vs RIVALS remaining: ${nyiH2H.length ? nyiH2H.map(g=>g[0]+' '+(g[2]==='H'?'vs':'@')+g[1]).join(', ') : 'None'}
+NYI H2H vs RIVALS remaining: ${nyiH2H.length ? nyiH2H.length + ' games' : 'None'}
 
-ONLY reference games listed above as upcoming. NEVER invent or assume games not on this list.
-
-BUBBLE TEAM SCHEDULES (for WC analysis):
+RIVAL REMAINING SCHEDULES:
 ${bubbleSchedStr}
 
-Return this exact JSON structure with NO other text, NO markdown, NO explanation:
+ONLY reference games listed above. NEVER invent games not on these lists.
+
+Return this exact JSON — NO other text, NO markdown:
 {"metro":["insight1","insight2","insight3"],"wildcard":["insight1","insight2","insight3"]}
 
-METRO insights (exactly 3). These must go BEYOND what the standings show — synthesize multiple data points to reveal something non-obvious:
+METRO insights (exactly 3) — focus on NYI vs ${met3Holder||'Metro #3 target'} for Metro #3:
 
-- Insight 1 MUST be about the RW tiebreaker vs PIT specifically: state who leads RW now, by how much, AND calculate what NYI needs to do in remaining games to project a RW lead at season end (estimate: ~55% of wins come in regulation). If PIT leads RW now, how many regulation wins does NYI need? Be precise.
-- Insight 2 MUST be a scenario analysis. IMPORTANT MATH: a win = 2pts, OT/SO win = 2pts, OT/SO loss = 1pt, regulation loss = 0pts. NYI currently has ${nyi.pts}pts. If NYI goes 4-2, they add 8pts = ${nyi.pts+8}pts. If 3-3, add 6pts = ${nyi.pts+6}pts. Compare to PIT's current ${ST['PIT']?ST['PIT'].pts:0}pts with their remaining games. Metro #3 requires beating PIT OR finishing ahead of them. ONLY compare NYI to Metro teams (CAR, PIT, CBJ, PHI, WSH, NJD, NYR) — NOT Ottawa or Boston which are WC/ATL teams.
-- Insight 3 MUST analyze a specific upcoming game from NYI REMAINING SCHEDULE and its DUAL impact — both the direct pts AND effect on a Metro or WC rival. OTT is a WC team, not Metro. PHI IS a Metro team and also a WC bubble team.
-- NEVER mention PIT in the wildcard section
-- NEVER put OTT or BOS in the Metro race — they are NOT Metro division teams
-- NEVER restate anything already shown in the standings
+- Insight 1: ${met3Holder||'Metro #3'} tiebreaker analysis. ${met3Holder} leads NYI by ${phiGap}pts. State ${met3Holder}'s RW vs NYI's RW. If NYI closes the pts gap, who wins the tiebreaker? Estimate: ~55% of wins come in regulation. Be precise with numbers.
+- Insight 2: Scenario math. MATH RULES: win=2pts, OTL=1pt, loss=0pts. NYI has ${nyi.pts}pts. ${met3Holder||'Metro #3 holder'} has ${phi?phi.pts:0}pts with ${phi?82-(phi.wins+phi.losses+phi.otl):0}GL. If NYI goes X-Y in ${gamesLeft} games, do they pass ${met3Holder||'them'}? Show the specific math. Only compare NYI to METRO teams (CAR, PIT, CBJ, PHI, WSH, NJD, NYR).
+- Insight 3: Pick one specific upcoming NYI game from NYI REMAINING SCHEDULE. Analyze its dual impact — direct pts for NYI AND effect on a Metro rival if applicable. Atlantic teams (${wc2Holder||'OTT'}, DET) are NOT Metro teams.
+- NEVER mention Atlantic teams as Metro rivals
 - Max 2 sentences. Every sentence must contain a number.
 
-WILDCARD insights (exactly 3). Completely separate from metro — about the WC bubble race only. Must surface non-obvious findings:
+WILDCARD insights (exactly 3) — focus on NYI chasing ${wc2Holder||'WC2'}, fending off ${bubbleChasersStr||'bubble teams'}:
 
-- Insight 1 MUST be a convergence scenario with explicit math. Current pts: NYI ${nyi.pts}, then check OTT/DET/PHI pts from STANDINGS DATA. Calculate: NYI projected final = ${nyi.pts} + (current pace × ${gamesLeft} games). Each rival's projected final = their current pts + (their pace × their games left). Show the math explicitly: "NYI projects Xpts, OTT projects Ypts, gap = Z". Verify your arithmetic before writing.
-- Insight 2 MUST identify a specific rival-vs-rival game from BUBBLE TEAM SCHEDULES. CRITICAL MATH: when Team A beats Team B, Team B LOSES (gets 0pts from that game) — they do NOT gain points. So if OTT has 86pts and loses to DET, OTT stays at 86pts. NYI's lead over OTT stays the same OR grows by 2 if NYI also wins that night. State the date, teams, and the correct math.
-- Insight 3 MUST be about schedule difficulty — use BUBBLE TEAM SCHEDULES above to identify which rival has the hardest or easiest remaining opponents. ONLY reference opponents that actually appear in that team's schedule. DET does NOT play NYI — do not say they do. PHI plays NYI on Apr 3. OTT plays NYI on Apr 11.
-- NEVER use pts/game rates — always say "X pts in Y games"
-- NEVER mention PIT in the wildcard section
-- NEVER invent games — only reference games in BUBBLE TEAM SCHEDULES and NYI REMAINING SCHEDULE
+- Insight 1: Points math. NYI has ${nyi.pts}pts (${gamesLeft}GL). ${wc2Holder||'WC2 holder'} has ${ott?ott.pts:0}pts (${ott?82-(ott.wins+ott.losses+ott.otl):0}GL). NYI needs ${ottGap>0?ottGap+' more pts just to tie '+wc2Holder:'to maintain their lead'}. Project both teams' final totals at current pace. Show the arithmetic explicitly.
+- Insight 2: Identify a specific rival-vs-rival game from RIVAL REMAINING SCHEDULES. MATH: when Team A beats Team B, Team B gets 0pts — they don't gain anything. State the date, teams, and what it means for NYI's gap vs both teams.
+- Insight 3: Schedule difficulty. Use RIVAL REMAINING SCHEDULES to show which rival has the toughest or easiest remaining path. Only cite opponents actually listed in their schedule above.
+- Metro-only teams (PIT, PHI, NJD, NYR, WSH, CBJ, CAR) are NOT in the Wild Card race unless they appear in the standings bubble
+- NEVER use pts/game rates — say "X pts in Y games"
+- NEVER invent games
 - Max 2 sentences. Every sentence must contain a number.
 
-CRITICAL: Your entire response must be valid JSON only. No text before or after the JSON object.`;
+CRITICAL: Return valid JSON only. No text before or after.`;
 
-    // 9. Call OpenAI
+    // 12. Call OpenAI
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
