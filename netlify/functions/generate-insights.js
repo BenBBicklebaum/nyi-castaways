@@ -241,18 +241,38 @@ exports.handler = async (event, context) => {
                     || metTop3List.filter(t => t !== 'NYI')[0]
                     || null;
 
-    // Bubble: teams within 8 pts of WC2 (can still make it)
+    // Dynamic race group — same logic as rebuildRaceGroup() in index.html
+    // threshold = min(nyiGl + 2, 4): tightens as season ends, never wider than 4pts
+    const nyi = ST['NYI'];
+    const nyiGl = 82 - (nyi.wins + nyi.losses + nyi.otl);
+    const threshold = Math.min(nyiGl + 2, 4);
     const wc2Pts = wc2Holder && ST[wc2Holder] ? ST[wc2Holder].pts : 0;
+
     const dynamicRaceGroup = new Set(['NYI']);
-    eastSorted.forEach(([t, s]) => {
+
+    // WC pool: within threshold pts of WC2 AND mathematically alive
+    wcPool.forEach(t => {
+      if(!t || !ST[t]) return;
+      const s = ST[t];
       const gl = 82 - (s.wins + s.losses + s.otl);
-      if (s.pts + gl * 2 >= wc2Pts || wc2Pts - s.pts <= 8) dynamicRaceGroup.add(t);
+      const maxPts = s.pts + gl * 2;
+      const gap = wc2Pts - s.pts;
+      if(gap <= threshold && maxPts >= wc2Pts) dynamicRaceGroup.add(t);
     });
-    // Always include current playoff teams
-    [...metTop3, ...atlTop3, wc1Holder, wc2Holder].forEach(t => { if(t) dynamicRaceGroup.add(t); });
+
+    // Metro: within threshold pts of NYI in either direction AND mathematically relevant
+    metSorted.forEach(t => {
+      if(!t || !ST[t] || t === 'NYI') return;
+      const s = ST[t];
+      const gl = 82 - (s.wins + s.losses + s.otl);
+      const maxPts = s.pts + gl * 2;
+      const gap = Math.abs(s.pts - nyi.pts);
+      const nyiCanCatch = nyi.pts + nyiGl * 2 >= s.pts;
+      const theyCanCatch = maxPts >= nyi.pts;
+      if(gap <= threshold && (nyiCanCatch || theyCanCatch)) dynamicRaceGroup.add(t);
+    });
 
     // 9. Build rich prompt context
-    const nyi = ST['NYI'];
     const sorted = Object.entries(ST).sort((a,b) => b[1].pts - a[1].pts);
 
     const standingsStr = sorted.map(([t, s]) => {
@@ -281,7 +301,7 @@ exports.handler = async (event, context) => {
       ? `\nToday's completed push group games:\n${finishedGames.join('\n')}`
       : '\nNo push group games today.';
 
-    const gamesLeft = 82 - nyi.gp;
+    const gamesLeft = nyiGl; // alias — already computed above
     const today = new Date().toLocaleDateString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric'});
 
     // 10. Fetch NYI schedule from NHL API (remaining games only)
