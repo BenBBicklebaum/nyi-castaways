@@ -458,15 +458,28 @@ function rebuildRaceGroup(){
   const newGroup = new Set(['NYI']);
 
   // ── WC race ──────────────────────────────────────────────────
-  // Include WC1/WC2 holders + any bubble team within threshold pts of WC2
-  // AND still mathematically alive (maxPts >= WC2 pts)
-  const wc2Holder = wcp.find(t => t && t !== 'NYI') || null;
+  // Reference point is WC2 — that's the spot NYI is chasing.
+  // Include: WC2 holder always (the direct target) + bubble teams within threshold of WC2
+  // Exclude: WC1 if they're safely ahead (not part of NYI's race)
+  const wc2Holder = (wcp[1] && wcp[1] !== 'NYI') ? wcp[1]
+                  : (wcp[0] && wcp[0] !== 'NYI') ? wcp[0] : null;
   const wc2Pts = wc2Holder && ST[wc2Holder] ? ST[wc2Holder].pts : 999;
-  wcp.forEach(t => {
+
+  // Always include WC2 holder
+  if(wc2Holder) newGroup.add(wc2Holder);
+
+  // Include WC1 only if NYI is close enough to reach them
+  const wc1Holder = wcp[0] && wcp[0] !== 'NYI' && wcp[0] !== wc2Holder ? wcp[0] : null;
+  if(wc1Holder && ST[wc1Holder] && ST[wc1Holder].pts - nyi.pts <= threshold) {
+    newGroup.add(wc1Holder);
+  }
+
+  // Include bubble teams: within threshold pts of WC2 AND mathematically alive
+  wcp.slice(2).forEach(t => {
     if(!t || !ST[t]) return;
     const gl = 82 - (ST[t].wins + ST[t].losses + ST[t].otl);
     const maxPts = ST[t].pts + gl * 2;
-    const gap = wc2Pts - ST[t].pts;
+    const gap = wc2Pts - ST[t].pts; // how far below WC2 they are
     if(gap <= threshold && maxPts >= wc2Pts) newGroup.add(t);
   });
 
@@ -982,16 +995,36 @@ function renderRace() {
   }
 
   banner('Metropolitan Division Push — Chasing Metro #3','ban-met');
-  // Metro: show teams within threshold of NYI (same logic as RACE_GROUP)
+  const nyiPts = ST['NYI']?.pts || 0;
   const nyiMetRaceGl = ST['NYI'] ? 82-(ST['NYI'].wins+ST['NYI'].losses+ST['NYI'].otl) : 4;
   const raceThreshold = Math.min(nyiMetRaceGl + 2, 4);
-  const metRaceTeams = met.filter(t => t && t!=='NYI' && ST[t] && Math.abs(ST[t].pts - (ST['NYI']?.pts||0)) <= raceThreshold);
-  // Always include Metro #2 and #3 holder for context even if slightly outside threshold
-  [met[2],met[1]].filter(Boolean).forEach(t => { if(!metRaceTeams.includes(t)) metRaceTeams.push(t); });
+
+  // Metro section: Metro #3 holder (target) + any Metro team within threshold of NYI
+  // Metro #2 only shown if gap is closeable (within threshold * 2)
+  const met3 = met[2]; // current Metro #3 holder
+  const met2 = met[1]; // current Metro #2 holder
+  const metRaceTeams = [];
+  // Always show Metro #3 holder (the direct target)
+  if(met3 && met3!=='NYI' && ST[met3]) metRaceTeams.push(met3);
+  // Show Metro #2 only if gap is within 2x threshold (still potentially closeable)
+  if(met2 && met2!=='NYI' && ST[met2] && ST[met2].pts - nyiPts <= raceThreshold * 2) metRaceTeams.push(met2);
+  // Show any Metro team below NYI within threshold (threats from behind)
+  met.forEach(t => {
+    if(!t || t==='NYI' || !ST[t] || metRaceTeams.includes(t)) return;
+    if(nyiPts - ST[t].pts <= raceThreshold) metRaceTeams.push(t);
+  });
+  // Sort by pts desc so order makes sense in the table
+  metRaceTeams.sort((a,b) => ST[b].pts - ST[a].pts);
   metRaceTeams.filter(Boolean).forEach(raceRow);
 
   banner('Wild Card','ban-wc');
-  wcp.slice(0,2).forEach(raceRow);
+  // WC section: only show WC2 holder (the direct target NYI is chasing)
+  // Skip WC1 if they're safely ahead — they're not part of NYI's race
+  const wc1 = wcp[0], wc2 = wcp[1];
+  const wc1Safe = wc1 && ST[wc1] && ST[wc1].pts - nyiPts > raceThreshold;
+  if(!wc1Safe && wc1) raceRow(wc1); // only show WC1 if NYI could realistically reach them
+  if(wc2) raceRow(wc2); // always show WC2 — that's the direct target
+
   const wc2Pts2 = ST[wcp[1]] ? ST[wcp[1]].pts : 0;
   const bubble = wcp.slice(2).filter(t => {
     if(!ST[t]) return false;
@@ -1524,10 +1557,18 @@ function renderObservations(){
     });
   });
 
+  // Check if NYI has a remaining H2H game vs WC2 holder — that's the marquee game
+  const h2hVsOTT = ottTeam ? nyiRem.filter(g => g[1]===ottTeam) : [];
+  const ottH2HNote = h2hVsOTT.length
+    ? ` <strong>NYI hosts ${ottTeam} on ${h2hVsOTT[0][0]}</strong> — a direct 4-pt swing game. A win closes the gap and costs ${ottTeam} 2pts simultaneously.`
+    : '';
+
   const wcObs=[
     {lbl:`🎯 WC2 Gap — Chasing ${ottTeam||'WC2'}`,txt:ott&&ottTeam
       ?`${ottTeam} holds WC2 at <strong>${ott.pts}pts</strong> — NYI is ${ottGap>0?`<strong>${ottGap}pt${ottGap!==1?'s':''} back</strong>`:`tied at ${nyi.pts}pts`}. ${wcTbText()} With ${nyiGl} games left, every point is essential.`
       :'WC2 target data unavailable.'},
+    // H2H vs WC2 holder — always surface this as its own card if the game exists
+    ...(h2hVsOTT.length ? [{lbl:`🔥 Direct H2H — NYI vs ${ottTeam}`,txt:`NYI and ${ottTeam} play head-to-head on <strong>${h2hVsOTT[0][0]}</strong>. This is effectively a <strong>4-pt swing game</strong> — an NYI win closes the gap by 2 while costing ${ottTeam} 2pts. ${ottGap>0?`NYI needs to win AND get help to climb above ${ottTeam}.`:`NYI holds WC2 — a win here makes it a cushion.`}`}] : []),
     {lbl:'💥 Rival-vs-Rival Games',txt:rvrGames.length
       ?`Key bubble matchups still to play: <strong>${rvrGames.slice(0,3).join(', ')}</strong>. These guarantee one rival gets hurt — NYI needs to maximize gains while rivals cancel each other out.`
       :'No remaining bubble-vs-bubble games among race teams — every team plays non-rivals down the stretch.'},
