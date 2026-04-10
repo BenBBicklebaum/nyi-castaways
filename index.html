@@ -546,8 +546,15 @@ function todayDate() {
   return new Date(parseInt(y), parseInt(m)-1, parseInt(d));
 }
 function remaining(team) {
+  const sched = FULL_SCHEDULE[team] || [];
+  const gp = ST[team] ? ST[team].wins + ST[team].losses + ST[team].otl : 0;
+  // Primary: use GP from live standings — games at index >= gp are unplayed
+  // Fallback: if standings not loaded yet, filter by date
+  if(gp > 0 && gp <= sched.length) {
+    return sched.slice(gp);
+  }
   const today = todayDate();
-  return (FULL_SCHEDULE[team] || []).filter(g => parseGameDate(g[0]) >= today);
+  return sched.filter(g => parseGameDate(g[0]) > today);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1154,6 +1161,18 @@ function playoffProb(){
   const wc2Team  = firstNonNYI(wcp,1); // current WC2 holder
   const met3Team = firstNonNYI(met,2); // current Metro#3 holder
 
+  // ── Hard mathematical elimination check ───────────────────────
+  // If NYI can't beat BOTH the WC2 holder and the Metro#3 holder,
+  // check if they can beat at least one. If neither, return 0.
+  const nyiMaxPts = nyi.pts + nyiGl * 2;
+  function canReach(t) {
+    if(!t || !ST[t]) return false;
+    const s = ST[t];
+    return nyiMaxPts > s.pts || (nyiMaxPts === s.pts && tbEdge('NYI', t) === 'ahead');
+  }
+  if(!canReach(wc2Team) && !canReach(met3Team)) return 0;
+  // ─────────────────────────────────────────────────────────────
+
   // TB-aware cutline for each path (if NYI holds TB, equal pts is enough)
   function tbCutline(t){
     if(!t||!ST[t]) return 999;
@@ -1311,6 +1330,20 @@ function renderClinch(){
   // Helper: position-specific probability
   function posProb(pos){
     const t=threshTeam(pos); if(!t||!ST[t]) return 1;
+    const s=ST[t];
+
+    // ── Hard mathematical elimination check ───────────────────────
+    // If NYI's maximum possible pts < rival's current pts, it's over — 0%
+    const nyiMaxPts = nyi.pts + nyiGl * 2;
+    // NYI needs to PASS the rival (or tie if TB edge). Rival can also lose all remaining.
+    const rivalGl = 82 - (s.wins + s.losses + s.otl);
+    const rivalMinPts = s.pts; // rival could lose all remaining, earning no more pts
+    // If NYI can't even match the rival's current pts (accounting for TB), eliminated
+    const nyiCanTie = nyiMaxPts >= s.pts;
+    const nyiCanPass = nyiMaxPts > s.pts || (nyiMaxPts === s.pts && tbEdge('NYI',t) === 'ahead');
+    if(!nyiCanPass) return 0;
+    // ─────────────────────────────────────────────────────────────
+
     const nyiP=projPts('NYI'), thP=projPts(t);
     const edge=tbEdge('NYI',t);
     // TB-aware gap: if NYI wins TB, equal proj is a WIN not a tie
@@ -1414,24 +1447,48 @@ function renderClinch(){
   row.innerHTML=html;
   const mn=document.getElementById('magic-numbers');
   if(mn){
-    const lines=[];
+    const magicLines=[], tragicLines=[];
     [['WC2','Wild Card 2'],['WC1','Wild Card 1'],['METRO3','Metro #3'],['METRO2','Metro #2']].forEach(([pos,lbl])=>{
       const t=threshTeam(pos); if(!t||!ST[t]) return;
       const s=ST[t];
       const rivalGp=s.wins+s.losses+s.otl, rivalGl=82-rivalGp;
       const rivalMax=s.pts+rivalGl*2; // max pts rival can possibly reach
       const edge=tbEdge('NYI',t);
-      // Magic number: points combo NYI+rival need to guarantee NYI finishes ahead
+
+      // Magic number: NYI clinches when (NYI pts gained) + (rival pts dropped) = magic
       // = rivalMax - nyi.pts + 1, minus 1 if NYI holds tiebreaker
-      const tbBonus = edge==='ahead'?1:0; // if NYI wins TB, tie is enough
+      const tbBonus = edge==='ahead'?1:0;
       const magic = rivalMax - nyi.pts + 1 - tbBonus;
+
+      // Tragic number: NYI is eliminated when (NYI pts dropped) + (rival pts gained) = tragic
+      // = (NYI max possible) - rival.pts + 1, minus 1 if rival holds tiebreaker
+      // = nyi.pts + nyiGl*2 - rival.pts + 1 - tbBonus (same TB logic, rival's perspective)
+      const nyiMax = nyi.pts + nyiGl*2;
+      const tbPenalty = edge==='behind'?1:0; // rival holds TB → NYI needs 1 extra to pass
+      const tragic = nyiMax - s.pts + 1 - tbPenalty;
+
       if(magic<=0){
-        lines.push(`<span style="color:#4ade80">✓ ${lbl}</span>`);
+        magicLines.push(`<span style="color:#4ade80">✓ ${lbl}</span>`);
       } else {
-        lines.push(`<span style="color:var(--muted)">${lbl}:</span> <strong>${magic}</strong>`);
+        magicLines.push(`<span style="color:var(--muted)">${lbl}:</span> <strong>${magic}</strong>`);
+      }
+
+      if(tragic<=0){
+        tragicLines.push(`<span style="color:#f87171">✗ ${lbl}</span>`);
+      } else if(tragic===1){
+        tragicLines.push(`<span style="color:#f87171">${lbl}:</span> <strong style="color:#f87171">1 ⚠</strong>`);
+      } else {
+        tragicLines.push(`<span style="color:var(--muted)">${lbl}:</span> <strong>${tragic}</strong>`);
       }
     });
-    mn.innerHTML='<span style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--org)">🎯 Magic Numbers&nbsp;&nbsp;</span>'+lines.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+
+    const label = (emoji, text, color) =>
+      `<span style="font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:${color}">${emoji} ${text}&nbsp;&nbsp;</span>`;
+
+    mn.innerHTML =
+      label('🎯','Magic',  'var(--org)') + magicLines.join('&nbsp;&nbsp;·&nbsp;&nbsp;') +
+      `<span style="margin:0 10px;color:var(--bdr)">|</span>` +
+      label('💀','Tragic', '#f87171')    + tragicLines.join('&nbsp;&nbsp;·&nbsp;&nbsp;');
   }
   row.querySelectorAll('[data-clinch]').forEach(card=>{
     card.addEventListener('click',function(){
@@ -1625,7 +1682,7 @@ function renderObservations(){
   bubbleAll.forEach(t=>{
     const tGl=82-(ST[t].wins+ST[t].losses+ST[t].otl);
     const tRem=(FULL_SCHEDULE[t]||[]).filter(g=>{
-      try{const d=parseGameDate(g[0]);return d>=todayDate();}catch(e){return false;}
+      try{const d=parseGameDate(g[0]);return d>todayDate();}catch(e){return false;}
     });
     tRem.forEach(g=>{
       // Only games between two actual bubble competitors
