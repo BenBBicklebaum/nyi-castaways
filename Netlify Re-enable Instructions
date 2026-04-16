@@ -1,0 +1,101 @@
+# Netlify Re-Enable Instructions — NYI Castaways
+
+Use this when you're ready to bring the site back next October.
+
+---
+
+## Step 1 — Re-enable the Site on Netlify
+
+You manually disabled the site, so re-enabling it is straightforward:
+
+1. Go to **https://app.netlify.com**
+2. Log in and find the site (look for `islesplayoffrace2026.netlify.app` or the site name)
+3. Go to **Site overview**
+4. Click **"Activate builds"** (or go to **Project configuration → Build & deploy → Continuous deployment → Build settings → Configure → toggle Build status to Active**)
+5. Once builds are active, push any commit to the `main` branch to trigger a fresh deploy — or use **Deploys → Trigger deploy → Deploy site** from the UI
+
+> Note: Re-enabling builds does not automatically redeploy. You need to push a commit or manually trigger a deploy after activating.
+
+---
+
+## Step 2 — Check and Re-enter Environment Variables
+
+Environment variables may still be there, but tokens can expire or get rotated. Check each one:
+
+Go to **Site configuration → Environment variables**
+
+| Variable | What it does | How to get a new one |
+|---|---|---|
+| `NETLIFY_SITE_ID` | Identifies the site for Blobs storage (Butchie Bot cache) | Found in **Site configuration → General → Site details → Site ID** — it's a UUID, stays the same forever |
+| `NETLIFY_AUTH_TOKEN` | Lets the scheduled function write to Netlify Blobs | Go to **User settings (avatar top right) → Applications → Personal access tokens → New access token**. Name it "Castaways Blobs" with no expiry. |
+| `OPENAI_API_KEY` | Powers Butchie Bot AI insights via GPT-4o-mini | Go to **https://platform.openai.com/api-keys** → Create new secret key. Make sure your OpenAI account still has credit. |
+
+**Important:** After updating any env var, redeploy the site for the change to take effect. Scheduled functions pick up new env vars on their next run.
+
+---
+
+## Step 3 — Verify the Scheduled Function
+
+The hourly Butchie Bot function (`generate-insights.js`) runs on a cron schedule defined in `netlify.toml`. After re-enabling:
+
+1. Go to **Functions** tab in the Netlify dashboard
+2. Look for `generate-insights` — confirm it shows as active
+3. Check **Logs** to see if it ran successfully after deploy
+4. If it's not listed, check that `netlify.toml` is in the repo root and contains the scheduled function config
+
+---
+
+## Step 4 — Reconnect Custom Domain (if buying a new one)
+
+Since you're not renewing the old domain, you'll buy a new one for 2026-27:
+
+1. Buy the domain from Namecheap (or wherever)
+2. In Netlify: **Domain management → Add a domain → Add custom domain**
+3. Enter the new domain name
+4. Netlify will give you nameservers or a CNAME record to add in Namecheap
+5. In Namecheap: **Domain → Manage → Nameservers** — switch to "Custom DNS" and enter Netlify's nameservers, OR add the CNAME record to the existing DNS
+6. DNS propagation takes 10 min to a few hours
+7. Netlify will auto-provision an SSL certificate (Let's Encrypt) once DNS resolves — no action needed
+
+---
+
+## Step 5 — Update the Files for the New Season
+
+Before triggering a deploy, make sure you've made all the updates from `NEXT_SEASON_SETUP.md`. The big one is `FULL_SCHEDULE` — the dashboard won't show correct remaining games or SOS until that's updated for the new season.
+
+See `NEXT_SEASON_SETUP.md` for the full checklist and `NEXT_SEASON_STARTER_PROMPT.md` for the Claude prompt to do it all in one session.
+
+---
+
+## Quick Sanity Check After Deploy
+
+Once the site is live, confirm these are all working:
+
+- [ ] Page loads and shows current NHL standings
+- [ ] Playoff Push table shows correct teams
+- [ ] Score cards load and show today's games (or most recent)
+- [ ] Clinch Tracker shows probability and magic/tragic numbers
+- [ ] MoneyPuck odds appear on the probability card (may take a minute)
+- [ ] News feed loads at the bottom
+- [ ] `/.netlify/functions/nhl?type=test` returns `{"ok":true}` (paste in browser to check)
+- [ ] `/.netlify/functions/nhl?type=standings` returns JSON standings data
+
+---
+
+## If Something Breaks
+
+**Site shows "Site not available"** — builds are still disabled. Go to Netlify → Site overview → Activate builds, then redeploy.
+
+**Standings or scores not loading** — the NHL API endpoint may have changed. Check `https://github.com/Zmalski/NHL-API-Reference` for updated endpoints. The current ones are:
+- Standings: `https://api-web.nhle.com/v1/standings/now`
+- Scores: `https://api-web.nhle.com/v1/score/now`
+
+**Butchie Bot shows "unavailable"** — check the `OPENAI_API_KEY` env var and OpenAI account credit. Check Netlify function logs for the error.
+
+**MoneyPuck odds not showing** — check that `https://moneypuck.com/moneypuck/simulations/simulations_recent.csv` is still accessible in a browser. If the URL changed, update it in `nhl.js` in the `type === 'moneypuck'` handler.
+
+**Scheduled function not running** — check `netlify.toml` has the cron schedule and that the function name matches. Netlify scheduled functions require a paid plan or usage credits — confirm your account is active.
+
+---
+
+*Last updated: April 2026*
