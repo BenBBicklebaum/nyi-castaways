@@ -1,0 +1,32 @@
+# Domain Name Setup Conversation Starter
+
+Paste this into a fresh Claude conversation when you're ready to buy and connect a new domain for the 2026-27 season. Do this AFTER the Netlify site is re-enabled and deploying successfully.
+
+---
+
+## The Prompt
+
+I need help buying a new domain name and connecting it to my Netlify site for my NYI Castaways hockey dashboard.
+
+**Context:**
+- My site is already live on Netlify at `islesplayoffrace2026.netlify.app` (or similar `.netlify.app` URL)
+- I used Namecheap for the domain last year and am comfortable using them again
+- I do NOT have a domain yet — I need to pick and buy one
+- The site is a New York Islanders playoff race tracking dashboard called "NYI Castaways Playoff Push"
+
+**What I need help with:**
+
+1. **Picking a domain name** — suggest a few good options for a 2026-27 Islanders playoff push site. Something short, memorable, and easy to share. `.com` preferred but open to other TLDs if the right name is taken.
+
+2. **Buying it on Namecheap** — walk me through the purchase, what to skip (privacy protection is usually auto-included, what else to watch out for), and what NOT to buy that Namecheap will try to upsell.
+
+3. **Connecting it to Netlify** — once I've bought the domain, walk me through:
+   - Adding the custom domain in the Netlify dashboard
+   - Whether to use Netlify DNS (point nameservers) or Namecheap DNS (add a CNAME record) — and which you recommend
+   - What records to add and where
+   - How long to expect before it's live
+   - How SSL (HTTPS) gets set up — does Netlify handle it automatically?
+
+4. **Confirming it works** — how do I know when DNS has propagated and the domain is fully connected?
+
+Please walk me through each step.
