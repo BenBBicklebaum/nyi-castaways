@@ -1,0 +1,32 @@
+# Netlify Setup Conversation Starter
+
+Paste this into a fresh Claude conversation when you're ready to get Netlify configured for the new season. No files needed — this is all UI/config work.
+
+---
+
+## The Prompt
+
+I need help setting up Netlify for my NYI Castaways Playoff Push hockey dashboard for the 2026-27 season. Here's the context:
+
+**What the site is:**
+- A single `index.html` file deployed via Netlify
+- Two Netlify serverless functions: `nhl.js` (API proxy) and `generate-insights.js` (scheduled hourly AI insights)
+- GitHub repo: `BenBBicklebaum/nyi-castaways` (`main` branch = production)
+- The site was previously live, then disabled at end of last season
+
+**What I need help with:**
+
+1. **Re-enabling the site** — I disabled it manually at the end of last season. Walk me through re-activating it in the Netlify dashboard and triggering a fresh deploy.
+
+2. **Environment variables** — I need to check and re-enter these three:
+   - `NETLIFY_SITE_ID` — the site's UUID (where do I find this?)
+   - `NETLIFY_AUTH_TOKEN` — a personal access token for Netlify Blobs (how do I create a new one that won't expire?)
+   - `OPENAI_API_KEY` — for GPT-4o-mini AI insights (how do I check if my existing key still works?)
+
+3. **Scheduled function** — `generate-insights.js` runs on a cron schedule defined in `netlify.toml`. How do I verify it's active and running after re-deploy?
+
+4. **New custom domain** — I'm not reusing the old domain. Walk me through buying a new domain and connecting it to Netlify, including the DNS settings in Namecheap and getting SSL working.
+
+5. **Sanity check** — what should I test to confirm everything is working after deploy?
+
+Please walk me through each step one at a time.
