@@ -1,0 +1,45 @@
+The Prompt
+I'm rebuilding my NYI Castaways Playoff Push dashboard for the 2026-27 NHL season. This is a live playoff race tracking site for New York Islanders fans hosted on Netlify with a custom domain.
+The site from last season is archived on GitHub at: BenBBicklebaum/nyi-castaways
+I'm uploading the three core files from last season:
+
+index.html — the entire frontend (~220KB, all JS/CSS inline, no build step)
+nhl.js — Netlify serverless function (NHL API proxy, MoneyPuck odds, Google News RSS)
+generate-insights.js — Netlify scheduled function (hourly AI insights via GPT-4o-mini, stored in Netlify Blobs)
+
+Tech stack:
+
+Frontend: single index.html, all JS/CSS inline
+Backend: Netlify serverless functions in /netlify/functions/
+Repo: BenBBicklebaum/nyi-castaways — main = production, auto-deploys to Netlify
+Netlify env vars needed: OPENAI_API_KEY, NETLIFY_SITE_ID, NETLIFY_AUTH_TOKEN
+NHL API reference: https://github.com/Zmalski/NHL-API-Reference
+Google Analytics: G-W2JLY4BXGR
+
+What I need you to do to set up for the new season:
+
+Replace FULL_SCHEDULE in index.html — fetch the complete 2026-27 schedule for all 32 teams from the NHL API (https://api-web.nhle.com/v1/club-schedule-season/{TEAM}/now) and format it as the FULL_SCHEDULE object. Keep the same format: {"NYI": [["Oct 9", "OPP", "H"], ...], ...} for all 32 teams.
+Update parseGameDate() year in index.html — change new Date(2026, ...) to new Date(2027, ...) since the season ends in April 2027.
+Update the score nav ceiling — the Math.min(11, ...) value in scNavDay(). Recalculate based on the new season end date minus the launch date in days.
+Update page title and h1 — change "Playoff Push 2026" to "Playoff Push 2027" everywhere.
+Update "Season ends April 16, 2026" in generate-insights.js — change to the actual last day of the 2026-27 regular season.
+Check TEAM_INFO and TEAM_COLORS — update if any teams relocated, expanded, or changed abbreviations since last season.
+Let me know if anything else looks stale or needs updating based on your review of the files.
+
+Key architecture notes to know before touching anything:
+
+RACE_GROUP is built dynamically in rebuildRaceGroup() after every standings load — do not hardcode it
+remaining() uses ST[team].gp (games played from standings) to slice the schedule — completed games drop off automatically
+tbEdge() is purely tiebreaker-based (RW → ROW → W), ignoring pts — do not change this
+posProb() has a hard 0% mathematical elimination floor — preserve this
+The race table threshold is Math.min(nyiGl + 2, 4) — keeps the field tight late in the season
+All Metro #3 and WC2 target teams are derived from live standings — nothing is hardcoded to PHI or OTT
+
+The NEXT_SEASON_SETUP.md file in the repo has detailed documentation of everything, including lessons learned from the 2025-26 season. Please read it before making any changes.
+
+After Setup
+Once the files are updated and deployed, the dashboard should be fully self-maintaining for the season. The main things that need attention mid-season:
+
+Nothing — the race group, targets, thresholds, schedules, and observations all derive from live standings automatically
+If Butchie Bot (AI insights) quality degrades, the prompt is in generate-insights.js — it can be tuned without touching index.html
+MoneyPuck odds appear in the Clinch Tracker — if they stop showing, check https://moneypuck.com/moneypuck/simulations/simulations_recent.csv is still accessible
